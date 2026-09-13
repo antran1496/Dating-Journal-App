@@ -1,0 +1,281 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Sparkles, Hash, Star } from 'lucide-react';
+import { TarotDraw } from '@/components/features/tarot-draw';
+import { ReadingCard } from '@/components/features/reading-card';
+import { createClient } from '@/lib/supabase/client';
+import { calculateLifePathNumber } from '@/lib/ai/prompts/numerology';
+import { getZodiacSign } from '@/lib/ai/prompts/zodiac';
+import { MAJOR_ARCANA } from '@/lib/ai/prompts/tarot';
+import type { AiReading, Profile } from '@/types';
+
+export default function InsightsPage() {
+  const [activeTab, setActiveTab] = useState<'numerology' | 'zodiac' | 'tarot'>('numerology');
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [partnerProfile, setPartnerProfile] = useState<Profile | null>(null);
+  const [readings, setReadings] = useState<AiReading[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [manualPartnerName, setManualPartnerName] = useState('');
+  const [manualPartnerDate, setManualPartnerDate] = useState('');
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get profile
+      const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      setProfile(p as Profile);
+
+      // Get partner profile via couple_members
+      const { data: memberData } = await supabase
+        .from('couple_members')
+        .select('couple_id, couple:couples(couple_members(profile:profiles(*)))')
+        .eq('profile_id', user.id)
+        .maybeSingle();
+
+      if (memberData?.couple) {
+        const couple = memberData.couple as any;
+        const partner = couple.couple_members.find((m: any) => m.profile?.id !== user.id);
+        if (partner) setPartnerProfile(partner.profile);
+      }
+
+      // Get all readings
+      const { data: rData } = await supabase
+        .from('ai_readings')
+        .select('*')
+        .eq('profile_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (rData) setReadings(rData as AiReading[]);
+      setIsLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const generateReading = async (type: string, inputData: Record<string, unknown>) => {
+    setIsGenerating(true);
+    try {
+      const res = await fetch('/api/ai/reading', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, input_data: inputData }),
+      });
+      const { data } = await res.json();
+      if (data) {
+        // Prepend to top
+        setReadings((prev) => {
+          // Remove old cache if it's the exact same id
+          const filtered = prev.filter((r) => r.id !== data.id);
+          return [data, ...filtered];
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleNumerology = () => {
+    if (!profile?.birth_date) return alert('Vui lòng cập nhật ngày sinh trong phần Hồ sơ');
+    generateReading('numerology', { 
+      birth_date: profile.birth_date,
+      display_name: profile.display_name 
+    });
+  };
+
+  const handleZodiac = () => {
+    const partnerDate = partnerProfile?.birth_date || manualPartnerDate;
+    const partnerName = partnerProfile?.display_name || manualPartnerName || 'Người ấy';
+
+    if (!profile?.birth_date || !partnerDate) {
+      return alert('Cả 2 người cần nhập ngày sinh.');
+    }
+    generateReading('zodiac', {
+      birth_date_1: profile.birth_date,
+      name_1: profile.display_name,
+      birth_date_2: partnerDate,
+      name_2: partnerName,
+    });
+  };
+
+  const handleTarotComplete = (cardIds: number[]) => {
+    generateReading('tarot', { card_ids: cardIds });
+  };
+
+  // Calculate info for display
+  const myLifePath = profile?.birth_date ? calculateLifePathNumber(profile.birth_date) : null;
+  const myZodiac = profile?.birth_date ? getZodiacSign(profile.birth_date) : null;
+  const partnerDateToUse = partnerProfile?.birth_date || manualPartnerDate;
+  const partnerZodiac = partnerDateToUse ? getZodiacSign(partnerDateToUse) : null;
+
+  return (
+    <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
+      <div>
+        <h1 className="font-heading text-2xl font-bold text-text flex items-center gap-2">
+          <Sparkles className="w-7 h-7 text-primary" />
+          Khám phá tình yêu
+        </h1>
+        <p className="text-text-muted text-sm mt-1">
+          Dùng AI để hiểu rõ hơn về mối quan hệ của hai bạn
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex bg-surface-hover p-1 rounded-[var(--radius-md)] border border-border">
+        <button
+          onClick={() => setActiveTab('numerology')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-[var(--radius-sm)] transition-colors ${
+            activeTab === 'numerology' ? 'bg-surface shadow-sm text-primary' : 'text-text-muted hover:text-text'
+          }`}
+        >
+          <Hash className="w-4 h-4" /> Thần số học
+        </button>
+        <button
+          onClick={() => setActiveTab('zodiac')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-[var(--radius-sm)] transition-colors ${
+            activeTab === 'zodiac' ? 'bg-surface shadow-sm text-accent' : 'text-text-muted hover:text-text'
+          }`}
+        >
+          <Star className="w-4 h-4" /> Cung hoàng đạo
+        </button>
+        <button
+          onClick={() => setActiveTab('tarot')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-[var(--radius-sm)] transition-colors ${
+            activeTab === 'tarot' ? 'bg-surface shadow-sm text-purple-500' : 'text-text-muted hover:text-text'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" /> Tarot
+        </button>
+      </div>
+
+      {/* Content Area */}
+      <div className="min-h-[300px]">
+        {activeTab === 'numerology' && (
+          <Card>
+            <CardHeader className="text-center pb-2">
+              <CardTitle>Con số chủ đạo của bạn</CardTitle>
+            </CardHeader>
+            <CardBody className="flex flex-col items-center gap-6">
+              {myLifePath ? (
+                <>
+                  <div className="w-24 h-24 rounded-full bg-primary/10 border-4 border-primary/20 flex items-center justify-center shadow-glow">
+                    <span className="text-4xl font-heading font-bold text-primary">{myLifePath}</span>
+                  </div>
+                  <Button onClick={handleNumerology} isLoading={isGenerating} variant="primary">
+                    Xem luận giải chi tiết
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center space-y-3">
+                  <p className="text-text-muted text-sm">Chưa có thông tin ngày sinh.</p>
+                  <Button variant="secondary" onClick={() => window.location.href = '/profile'}>Cập nhật Hồ sơ</Button>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        )}
+
+        {activeTab === 'zodiac' && (
+          <Card>
+            <CardHeader className="text-center pb-2">
+              <CardTitle>Độ tương hợp Cung hoàng đạo</CardTitle>
+            </CardHeader>
+            <CardBody className="flex flex-col items-center gap-6">
+              {myZodiac && partnerZodiac ? (
+                <>
+                  <div className="flex items-center gap-6">
+                    <div className="text-center">
+                      <div className="text-4xl mb-2">{myZodiac.emoji}</div>
+                      <p className="font-bold text-text">{myZodiac.name}</p>
+                      <p className="text-xs text-text-muted">{profile?.display_name}</p>
+                    </div>
+                    <div className="text-2xl text-text-muted">💖</div>
+                    <div className="text-center">
+                      <div className="text-4xl mb-2">{partnerZodiac.emoji}</div>
+                      <p className="font-bold text-text">{partnerZodiac.name}</p>
+                      <p className="text-xs text-text-muted">{partnerProfile?.display_name || manualPartnerName || 'Người ấy'}</p>
+                    </div>
+                  </div>
+                  <Button onClick={handleZodiac} isLoading={isGenerating} variant="primary" className="!bg-accent hover:!bg-accent-hover text-white border-none">
+                    Phân tích tương hợp
+                  </Button>
+                </>
+              ) : !myZodiac ? (
+                <div className="text-center space-y-3">
+                  <p className="text-text-muted text-sm">Bạn cần cập nhật ngày sinh của mình trước.</p>
+                  <Button variant="secondary" onClick={() => window.location.href = '/profile'}>Cập nhật Hồ sơ</Button>
+                </div>
+              ) : (
+                <div className="w-full max-w-xs space-y-4">
+                  <div className="text-center mb-2">
+                    <p className="text-text-muted text-sm">Người yêu của bạn chưa tham gia? Nhập nhanh thông tin của họ để xem độ tương hợp nhé.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-text">Tên (tùy chọn)</label>
+                    <input 
+                      type="text" 
+                      value={manualPartnerName}
+                      onChange={(e) => setManualPartnerName(e.target.value)}
+                      placeholder="Nhập tên người ấy"
+                      className="w-full h-10 px-3 bg-surface border border-border rounded-[var(--radius-md)] focus:outline-none focus:border-primary text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-text">Ngày sinh</label>
+                    <input 
+                      type="date" 
+                      value={manualPartnerDate}
+                      onChange={(e) => setManualPartnerDate(e.target.value)}
+                      className="w-full h-10 px-3 bg-surface border border-border rounded-[var(--radius-md)] focus:outline-none focus:border-primary text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        )}
+
+        {activeTab === 'tarot' && (
+          <Card>
+            <CardHeader className="text-center pb-2">
+              <CardTitle>Trải bài 3 lá: Tình yêu</CardTitle>
+            </CardHeader>
+            <CardBody>
+              {isGenerating ? (
+                <div className="py-12 flex flex-col items-center gap-4">
+                  <Sparkles className="w-8 h-8 text-purple-500 animate-spin" />
+                  <p className="text-text-muted font-medium animate-pulse">Vũ trụ đang gửi thông điệp...</p>
+                </div>
+              ) : (
+                <TarotDraw cards={MAJOR_ARCANA} onComplete={handleTarotComplete} />
+              )}
+            </CardBody>
+          </Card>
+        )}
+      </div>
+
+      {/* History Area */}
+      {readings.length > 0 && (
+        <div className="pt-8 space-y-4">
+          <h2 className="font-heading text-xl font-bold text-text border-b border-border pb-2">
+            Lịch sử luận giải
+          </h2>
+          <div className="grid grid-cols-1 gap-6">
+            {readings.map((reading) => (
+              <ReadingCard key={reading.id} reading={reading} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
