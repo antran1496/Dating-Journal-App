@@ -73,4 +73,5 @@ User có thể thay đổi theme runtime → tokens PHẢI hoạt động với 
 | [skills/design-system/SKILL.md](.agents/skills/design-system/SKILL.md) | Design tokens, màu sắc, typography, spacing |
 | [skills/supabase-integration/SKILL.md](.agents/skills/supabase-integration/SKILL.md) | Supabase client setup, RLS patterns, Storage |
 | [skills/supabase-migrations/SKILL.md](.agents/skills/supabase-migrations/SKILL.md) | Hướng dẫn tạo và chạy Supabase Migrations thay vì thao tác tay trên web |
+| [skills/auto-commit/SKILL.md](.agents/skills/auto-commit/SKILL.md) | Hướng dẫn tự động thực hiện git add, commit, push code lên Github theo yêu cầu |
 | [plan/PLAN.md](.agents/plan/PLAN.md) | Roadmap đầy đủ, schema DB, kế hoạch từng Phase |
