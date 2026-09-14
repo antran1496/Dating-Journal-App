@@ -5,11 +5,20 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import type { DateEntry } from '@/types';
 
-function formatDate(dateStr: string | null): string {
+function formatDate(dateStr: string | null, endDateStr: string | null = null): string {
   if (!dateStr) return 'Chưa ghi nhận';
-  return new Intl.DateTimeFormat('vi-VN', {
-    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+  const start = new Intl.DateTimeFormat('vi-VN', {
+    day: 'numeric', month: 'short', year: 'numeric',
   }).format(new Date(dateStr));
+  
+  if (endDateStr) {
+    const end = new Intl.DateTimeFormat('vi-VN', {
+      day: 'numeric', month: 'short', year: 'numeric',
+    }).format(new Date(endDateStr));
+    return `${start} - ${end}`;
+  }
+  
+  return start;
 }
 
 export const metadata = {
@@ -68,41 +77,53 @@ export default async function DatesPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {allDates.map((date) => (
-            <Link
-              key={date.id}
-              href={`/dates/${date.id}`}
-              className="group block rounded-[var(--radius-lg)] bg-surface border border-border hover:border-primary/30 hover:shadow-[var(--shadow-card)] transition-all overflow-hidden"
-            >
-              {date.checkin_image_url ? (
-                <div className="overflow-hidden h-40">
-                  <img
-                    src={date.checkin_image_url}
-                    alt={date.location_name ?? ''}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+        <div className="flex flex-col gap-4">
+          {allDates.map((date) => {
+            const thumbnail = date.checkin_image_urls?.[0] ?? date.checkin_image_url;
+            return (
+              <Link
+                key={date.id}
+                href={`/dates/${date.id}`}
+                className="group flex rounded-[var(--radius-lg)] bg-surface border border-border hover:border-primary/30 hover:shadow-[var(--shadow-card)] transition-all overflow-hidden p-3 gap-4"
+              >
+                <div className="shrink-0 w-24 h-20 rounded-[var(--radius-md)] overflow-hidden">
+                  {thumbnail ? (
+                    <img
+                      src={thumbnail}
+                      alt={date.location_name ?? ''}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-2xl">
+                      📍
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="h-20 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-3xl">
-                  📍
-                </div>
-              )}
-              <div className="p-4">
-                <h3 className="font-semibold text-text truncate mb-1">
-                  {date.location_name ?? 'Không có địa điểm'}
-                </h3>
-                <p className="text-text-muted text-xs mb-2">{formatDate(date.date_time ?? date.created_at)}</p>
-                {date.rating && (
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i} className={`text-sm ${i < date.rating! ? 'text-primary' : 'text-text-muted opacity-30'}`}>♥</span>
-                    ))}
+                
+                <div className="flex flex-col justify-center min-w-0 flex-1">
+                  <h3 className="font-semibold text-text truncate mb-0.5">
+                    {date.location_name ?? 'Không có địa điểm'}
+                  </h3>
+                  <p className="text-text-muted text-xs mb-1.5">{formatDate(date.date_time ?? date.created_at, date.end_date)}</p>
+                  
+                  <div className="flex items-center gap-2 mt-auto">
+                    {date.rating && (
+                      <div className="flex gap-0.5 shrink-0">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <span key={i} className={`text-[10px] ${i < date.rating! ? 'text-primary' : 'text-text-muted opacity-30'}`}>♥</span>
+                        ))}
+                      </div>
+                    )}
+                    {date.pros && (
+                      <p className="text-xs text-text-muted truncate">
+                        • {date.pros}
+                      </p>
+                    )}
                   </div>
-                )}
-              </div>
-            </Link>
-          ))}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

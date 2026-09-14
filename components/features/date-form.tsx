@@ -8,25 +8,28 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { RatingStars } from './rating-stars';
-import { ImageUpload } from './image-upload';
+import { MultiImageUpload } from './multi-image-upload';
 import { dateFormSchema, type DateFormValues } from '@/types/forms';
 import type { DateEntry } from '@/types';
 
 interface DateFormProps {
   defaultValues?: Partial<DateEntry>;
-  onSubmit: (values: DateFormValues & { checkin_image_url?: string }) => Promise<void>;
+  onSubmit: (values: DateFormValues & { checkin_image_url?: string; checkin_image_urls?: string[] }) => Promise<void>;
   onCancel?: () => void;
   isLoading?: boolean;
 }
 
 export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateFormProps) {
-  const [imageUrl, setImageUrl] = React.useState<string | null>(defaultValues?.checkin_image_url ?? null);
+  const [imageUrls, setImageUrls] = React.useState<string[]>(
+    defaultValues?.checkin_image_urls ?? (defaultValues?.checkin_image_url ? [defaultValues.checkin_image_url] : [])
+  );
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<DateFormValues>({
     resolver: zodResolver(dateFormSchema),
     defaultValues: {
       location_name: defaultValues?.location_name ?? '',
-      date_time: defaultValues?.date_time ? new Date(defaultValues.date_time).toISOString().slice(0, 16) : '',
+      date_time: defaultValues?.date_time ? new Date(defaultValues.date_time).toISOString().slice(0, 10) : '',
+      end_date: defaultValues?.end_date ? new Date(defaultValues.end_date).toISOString().slice(0, 10) : '',
       pros: defaultValues?.pros ?? '',
       cons: defaultValues?.cons ?? '',
       wish_next_time: defaultValues?.wish_next_time ?? '',
@@ -37,15 +40,19 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
   const rating = watch('rating');
 
   const handleFormSubmit = async (values: DateFormValues) => {
-    await onSubmit({ ...values, checkin_image_url: imageUrl ?? undefined });
+    await onSubmit({
+      ...values,
+      checkin_image_urls: imageUrls,
+      checkin_image_url: imageUrls.length > 0 ? imageUrls[0] : undefined
+    });
   };
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Ảnh check-in */}
       <div>
-        <label className="block text-sm font-medium text-text mb-2">📸 Ảnh check-in</label>
-        <ImageUpload value={imageUrl} onChange={setImageUrl} />
+        <label className="block text-sm font-medium text-text mb-2">📸 Ảnh buổi hẹn (tối đa 9 ảnh)</label>
+        <MultiImageUpload value={imageUrls} onChange={setImageUrls} />
       </div>
 
       {/* Địa điểm */}
@@ -59,13 +66,22 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
       />
 
       {/* Thời gian */}
-      <Input
-        {...register('date_time')}
-        type="datetime-local"
-        label="🕐 Thời gian"
-        icon={<Calendar size={16} />}
-        iconPosition="left"
-      />
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          {...register('date_time')}
+          type="date"
+          label="🕐 Ngày bắt đầu"
+          icon={<Calendar size={16} />}
+          iconPosition="left"
+        />
+        <Input
+          {...register('end_date')}
+          type="date"
+          label="🏁 Ngày kết thúc (Tuỳ chọn)"
+          icon={<Calendar size={16} />}
+          iconPosition="left"
+        />
+      </div>
 
       {/* Rating */}
       <div>

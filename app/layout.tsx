@@ -15,17 +15,36 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Dating Journal",
-  description: "Your private love story journal",
+  title: "Dating Journal — Nhật ký tình yêu",
+  description: "Ghi lại những khoảnh khắc yêu thương, khám phá tình yêu bằng AI",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Dating Journal",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
+};
+
+export const viewport = {
+  themeColor: "#e8507b",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="vi"
       className={`${inter.variable} ${playfair.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      </head>
       <body className="min-h-full flex flex-col font-body bg-bg text-text">
         <QueryProvider>
           <ThemeProvider defaultTheme="system" enableSystem>

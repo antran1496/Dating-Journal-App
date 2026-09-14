@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { generateText } from '@/lib/ai/gemini';
+import { generateText, generateWithImage } from '@/lib/ai/gemini';
 import { getNumerologyPrompt } from '@/lib/ai/prompts/numerology';
 import { getZodiacCompatibilityPrompt, getZodiacSign } from '@/lib/ai/prompts/zodiac';
 import { getTarotReadingPrompt, MAJOR_ARCANA } from '@/lib/ai/prompts/tarot';
+import { getPalmReadingPrompt } from '@/lib/ai/prompts/palm';
 import { z } from 'zod';
 
 const readingSchema = z.object({
-  type: z.enum(['numerology', 'zodiac', 'tarot']),
+  type: z.enum(['numerology', 'zodiac', 'tarot', 'palm']),
   input_data: z.record(z.unknown()),
 });
 
@@ -75,6 +76,34 @@ export async function POST(request: NextRequest) {
       const prompts = getTarotReadingPrompt(cards);
       system = prompts.system;
       userPrompt = prompts.user;
+    } else if (type === 'palm') {
+      // Palm reading uses multimodal — image sent as base64
+      const imageBase64 = input_data.image_base64 as string;
+      const mimeType = (input_data.mime_type as string) || 'image/jpeg';
+      if (!imageBase64) return NextResponse.json({ error: 'Cần ảnh lòng bàn tay' }, { status: 400 });
+      const { system } = getPalmReadingPrompt();
+      let palmResult: string;
+      try {
+        palmResult = await generateWithImage(system, imageBase64, mimeType);
+      } catch (e) {
+        console.error('[POST /api/ai/reading] Palm AI error:', e);
+        return NextResponse.json({ error: 'Dịch vụ AI tạm thời không khả dụng' }, { status: 503 });
+      }
+      // Save to DB (without the huge base64 in input_data)
+      const { data: palmReading, error: palmInsertError } = await supabase
+        .from('ai_readings')
+        .insert({
+          profile_id: user.id,
+          type: 'palm',
+          input_data: { mime_type: mimeType },
+          result_text: palmResult,
+        })
+        .select()
+        .single();
+      if (palmInsertError) {
+        return NextResponse.json({ data: { result_text: palmResult, type: 'palm', input_data: {} } });
+      }
+      return NextResponse.json({ data: palmReading });
     } else {
       return NextResponse.json({ error: 'Loại reading không hợp lệ' }, { status: 400 });
     }

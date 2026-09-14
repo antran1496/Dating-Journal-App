@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Hash, Star } from 'lucide-react';
+import { Sparkles, Hash, Star, Hand } from 'lucide-react';
 import { TarotDraw } from '@/components/features/tarot-draw';
 import { ReadingCard } from '@/components/features/reading-card';
 import { createClient } from '@/lib/supabase/client';
@@ -13,7 +13,7 @@ import { MAJOR_ARCANA } from '@/lib/ai/prompts/tarot';
 import type { AiReading, Profile } from '@/types';
 
 export default function InsightsPage() {
-  const [activeTab, setActiveTab] = useState<'numerology' | 'zodiac' | 'tarot'>('numerology');
+  const [activeTab, setActiveTab] = useState<'numerology' | 'zodiac' | 'tarot' | 'palm'>('numerology');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [partnerProfile, setPartnerProfile] = useState<Profile | null>(null);
   const [readings, setReadings] = useState<AiReading[]>([]);
@@ -21,6 +21,7 @@ export default function InsightsPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [manualPartnerName, setManualPartnerName] = useState('');
   const [manualPartnerDate, setManualPartnerDate] = useState('');
+  const [palmImage, setPalmImage] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -111,6 +112,17 @@ export default function InsightsPage() {
     generateReading('tarot', { card_ids: cardIds });
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPalmImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Calculate info for display
   const myLifePath = profile?.birth_date ? calculateLifePathNumber(profile.birth_date) : null;
   const myZodiac = profile?.birth_date ? getZodiacSign(profile.birth_date) : null;
@@ -137,7 +149,7 @@ export default function InsightsPage() {
             activeTab === 'numerology' ? 'bg-surface shadow-sm text-primary' : 'text-text-muted hover:text-text'
           }`}
         >
-          <Hash className="w-4 h-4" /> Thần số học
+          <Hash className="w-4 h-4" /> <span className="hidden sm:inline">Thần số học</span>
         </button>
         <button
           onClick={() => setActiveTab('zodiac')}
@@ -145,7 +157,7 @@ export default function InsightsPage() {
             activeTab === 'zodiac' ? 'bg-surface shadow-sm text-accent' : 'text-text-muted hover:text-text'
           }`}
         >
-          <Star className="w-4 h-4" /> Cung hoàng đạo
+          <Star className="w-4 h-4" /> <span className="hidden sm:inline">Cung hoàng đạo</span>
         </button>
         <button
           onClick={() => setActiveTab('tarot')}
@@ -153,7 +165,15 @@ export default function InsightsPage() {
             activeTab === 'tarot' ? 'bg-surface shadow-sm text-purple-500' : 'text-text-muted hover:text-text'
           }`}
         >
-          <Sparkles className="w-4 h-4" /> Tarot
+          <Sparkles className="w-4 h-4" /> <span className="hidden sm:inline">Tarot</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('palm')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-[var(--radius-sm)] transition-colors ${
+            activeTab === 'palm' ? 'bg-surface shadow-sm text-green-500' : 'text-text-muted hover:text-text'
+          }`}
+        >
+          <Hand className="w-4 h-4" /> <span className="hidden sm:inline">Chỉ tay</span>
         </button>
       </div>
 
@@ -261,16 +281,74 @@ export default function InsightsPage() {
             </CardBody>
           </Card>
         )}
+
+        {activeTab === 'palm' && (
+          <Card>
+            <CardHeader className="text-center pb-2">
+              <CardTitle>Xem bói chỉ tay 🖐️</CardTitle>
+            </CardHeader>
+            <CardBody className="flex flex-col items-center gap-6">
+              <p className="text-text-muted text-sm text-center max-w-sm">
+                Vui lòng chụp hoặc tải lên một bức ảnh rõ nét lòng bàn tay của bạn để AI có thể phân tích đường chỉ tay.
+              </p>
+              
+              {!palmImage ? (
+                <div className="flex gap-4">
+                  <Button onClick={() => document.getElementById('camera-input')?.click()} variant="primary">
+                    📷 Chụp ảnh
+                  </Button>
+                  <Button onClick={() => document.getElementById('gallery-input')?.click()} variant="secondary">
+                    📁 Chọn từ thư viện
+                  </Button>
+                  <input
+                    id="camera-input"
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  <input
+                    id="gallery-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-48 h-48 relative rounded-[var(--radius-md)] overflow-hidden border border-border">
+                    <img src={palmImage} alt="Palm" className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => setPalmImage(null)}
+                      className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-surface/80 rounded-full text-text hover:bg-surface"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <Button 
+                    onClick={() => generateReading('palm', { image: palmImage })} 
+                    isLoading={isGenerating} 
+                    variant="primary"
+                  >
+                    Xem kết quả
+                  </Button>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        )}
       </div>
 
       {/* History Area */}
-      {readings.length > 0 && (
+      {readings.filter(r => r.type === activeTab).length > 0 && (
         <div className="pt-8 space-y-4">
           <h2 className="font-heading text-xl font-bold text-text border-b border-border pb-2">
-            Lịch sử luận giải
+            Lịch sử luận giải {activeTab === 'numerology' ? 'Thần số học' : activeTab === 'zodiac' ? 'Cung hoàng đạo' : activeTab === 'tarot' ? 'Tarot' : 'Chỉ tay'}
           </h2>
           <div className="grid grid-cols-1 gap-6">
-            {readings.map((reading) => (
+            {readings.filter(r => r.type === activeTab).map((reading) => (
               <ReadingCard key={reading.id} reading={reading} />
             ))}
           </div>

@@ -32,3 +32,28 @@ export async function chatWithHistory(
   const response = await chat.sendMessage({ message: userMessage });
   return response.text ?? '';
 }
+
+export async function generateWithImage(
+  systemPrompt: string,
+  imageBase64: string,
+  mimeType: string = 'image/jpeg'
+): Promise<string> {
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.6-flash',
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { inlineData: { data: imageBase64, mimeType } },
+          { text: 'Hãy phân tích ảnh lòng bàn tay này.' },
+        ],
+      },
+    ],
+    config: {
+      systemInstruction: systemPrompt,
+      maxOutputTokens: 2048,
+      temperature: 0.8,
+    },
+  });
+  return response.text ?? '';
+}

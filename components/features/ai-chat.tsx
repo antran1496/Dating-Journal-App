@@ -62,7 +62,7 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
   };
 
   return (
-    <div className="flex flex-col h-[600px] border border-border rounded-[var(--radius-lg)] bg-surface overflow-hidden shadow-sm">
+    <div className="flex flex-col h-full border border-border rounded-[var(--radius-lg)] bg-surface overflow-hidden shadow-sm">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border bg-surface flex items-center gap-3 shrink-0">
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glow">
@@ -77,12 +77,38 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center text-center opacity-70">
-            <Sparkles className="w-12 h-12 text-primary mb-3" />
-            <p className="text-text font-medium">Chào {profile?.display_name || 'bạn'}!</p>
-            <p className="text-sm text-text-muted mt-1 max-w-xs">
-              Mình là Cupid, sẵn sàng lắng nghe và đưa ra những gợi ý thú vị cho chuyện tình cảm của bạn.
-            </p>
+          <div className="h-full flex flex-col items-center justify-center text-center">
+            <div className="flex flex-col items-center justify-center opacity-70 mb-8 mt-4">
+              <Sparkles className="w-12 h-12 text-primary mb-3" />
+              <p className="text-text font-medium">Chào {profile?.display_name || 'bạn'}!</p>
+              <p className="text-sm text-text-muted mt-1 max-w-xs">
+                Mình là Cupid, sẵn sàng lắng nghe và đưa ra những gợi ý thú vị cho chuyện tình cảm của bạn.
+              </p>
+            </div>
+            
+            <div className="w-full max-w-md grid grid-cols-1 md:grid-cols-2 gap-2 mt-auto pb-4">
+              {[
+                "Gợi ý địa điểm hẹn hò 🗺️",
+                "Quà tặng cho người yêu 🎁",
+                "Cách giải quyết xung đột 💬",
+                "Ý tưởng kỉ niệm đặc biệt 🎉"
+              ].map(suggestion => (
+                <button
+                  key={suggestion}
+                  onClick={() => {
+                    setInput(suggestion);
+                    // We need to submit immediately
+                    setTimeout(() => {
+                      const form = document.getElementById('chat-form') as HTMLFormElement;
+                      if (form) form.requestSubmit();
+                    }, 0);
+                  }}
+                  className="px-4 py-2 text-sm text-left text-text-muted bg-surface-hover border border-border rounded-xl hover:bg-surface-hover/80 hover:text-text hover:border-primary/50 transition-colors"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -138,7 +164,7 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
 
       {/* Input */}
       <div className="p-3 bg-surface border-t border-border shrink-0">
-        <form onSubmit={handleSubmit} className="flex items-end gap-2 relative">
+        <form id="chat-form" onSubmit={handleSubmit} className="flex items-end gap-2 relative">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}

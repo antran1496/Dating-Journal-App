@@ -11,6 +11,7 @@ const createDateSchema = z.object({
   wish_next_time: z.string().optional(),
   rating: z.coerce.number().min(1).max(5).optional(),
   checkin_image_url: z.string().optional(),
+  checkin_image_urls: z.array(z.string()).max(9).optional(),
 });
 
 export async function GET(request: NextRequest) {

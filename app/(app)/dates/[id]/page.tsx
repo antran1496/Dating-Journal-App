@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, MapPin, Calendar, Edit3 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import type { DateEntry } from '@/types';
+import { DeleteDateButton } from '@/components/features/delete-date-button';
 
 export default async function DateDetailPage(props: PageProps<'/dates/[id]'>) {
   const { id } = await props.params;
@@ -22,9 +23,18 @@ export default async function DateDetailPage(props: PageProps<'/dates/[id]'>) {
 
   const entry = date as DateEntry;
 
-  const formattedDate = entry.date_time
-    ? new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(entry.date_time))
-    : new Intl.DateTimeFormat('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(entry.created_at));
+  let formattedDate = '';
+  if (entry.date_time) {
+    const start = new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(entry.date_time));
+    if (entry.end_date) {
+      const end = new Intl.DateTimeFormat('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(entry.end_date));
+      formattedDate = `${start} - ${end}`;
+    } else {
+      formattedDate = start;
+    }
+  } else {
+    formattedDate = new Intl.DateTimeFormat('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(entry.created_at));
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -32,12 +42,15 @@ export default async function DateDetailPage(props: PageProps<'/dates/[id]'>) {
         <Link href="/dates" className="flex items-center gap-2 text-text-muted hover:text-text transition-colors text-sm">
           <ArrowLeft size={18} /> Quay lại
         </Link>
-        <Link
-          href={`/dates/${id}/edit`}
-          className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] border border-border hover:bg-surface-hover transition-colors text-sm font-medium text-text"
-        >
-          <Edit3 size={16} /> Chỉnh sửa
-        </Link>
+        <div className="flex items-center gap-2">
+          <DeleteDateButton id={entry.id} coupleId={entry.couple_id} />
+          <Link
+            href={`/dates/${id}/edit`}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius-md)] bg-primary text-primary-fg hover:opacity-90 transition-opacity text-sm font-medium"
+          >
+            <Edit3 size={16} /> Sửa
+          </Link>
+        </div>
       </div>
 
       {/* Hero Image */}

@@ -26,10 +26,12 @@ export type DateEntry = {
   id: string;
   couple_id: string;
   date_time: string | null;
+  end_date: string | null;
   location_name: string | null;
   location_lat: number | null;
   location_lng: number | null;
   checkin_image_url: string | null;
+  checkin_image_urls: string[] | null;
   pros: string | null;
   cons: string | null;
   wish_next_time: string | null;
@@ -64,7 +66,7 @@ export type CoupleWithMembers = Couple & {
 export type AiReading = {
   id: string;
   profile_id: string;
-  type: 'numerology' | 'zodiac' | 'tarot';
+  type: 'numerology' | 'zodiac' | 'tarot' | 'palm';
   input_data: Record<string, unknown>;
   result_text: string;
   created_at: string;

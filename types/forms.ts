@@ -34,6 +34,7 @@ export type JoinCoupleFormValues = z.infer<typeof joinCoupleSchema>;
 export const dateFormSchema = z.object({
   location_name: z.string().min(1, 'Vui lòng nhập địa điểm'),
   date_time: z.string().optional(),
+  end_date: z.string().optional(),
   pros: z.string().optional(),
   cons: z.string().optional(),
   wish_next_time: z.string().optional(),

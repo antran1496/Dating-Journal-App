@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { AiChat } from '@/components/features/ai-chat';
 import { createClient } from '@/lib/supabase/client';
 import type { AiChatMessage, Profile, AiChatSession } from '@/types';
-import { MessageSquare, Plus, Loader2 } from 'lucide-react';
+import { MessageSquare, Plus, Loader2, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function ChatPage() {
@@ -13,6 +13,7 @@ export default function ChatPage() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const supabase = createClient();
 
@@ -102,6 +103,7 @@ export default function ChatPage() {
   const startNewChat = () => {
     setCurrentSessionId(null);
     setMessages([]);
+    setIsSidebarOpen(false);
   };
 
   if (isLoading) {
@@ -113,23 +115,45 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="animate-[fadeIn_0.3s_ease-out] flex flex-col md:flex-row gap-6 h-[calc(100vh-120px)] min-h-[600px]">
+    <div className="animate-[fadeIn_0.3s_ease-out] flex flex-col md:flex-row gap-6 h-[calc(100dvh-160px)] min-h-[500px]">
       
+      {/* Mobile Header Toggle */}
+      <div className="md:hidden flex items-center justify-between bg-surface border border-border p-3 rounded-[var(--radius-lg)]">
+        <span className="font-heading font-medium text-text">Đoạn chat</span>
+        <Button variant="secondary" onClick={() => setIsSidebarOpen(true)} className="h-8 px-2">
+          <Menu className="w-4 h-4" />
+        </Button>
+      </div>
+
       {/* Sidebar for Sessions */}
-      <div className="w-full md:w-64 shrink-0 flex flex-col gap-4">
-        <Button onClick={startNewChat} variant="primary" className="w-full justify-start">
+      <div className={`
+        fixed inset-0 z-50 bg-surface md:bg-transparent md:relative md:z-auto
+        w-full md:w-64 shrink-0 flex-col gap-4 p-4 md:p-0
+        ${isSidebarOpen ? 'flex' : 'hidden md:flex'}
+      `}>
+        <div className="md:hidden flex justify-between items-center mb-4">
+          <h2 className="font-heading font-bold text-lg text-text">Lịch sử chat</h2>
+          <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-text-muted hover:text-text rounded-full hover:bg-surface-hover">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <Button onClick={startNewChat} variant="primary" className="w-full justify-start shrink-0">
           <Plus className="w-4 h-4 mr-2" />
           Đoạn chat mới
         </Button>
         
-        <div className="flex-1 overflow-y-auto space-y-2">
+        <div className="flex-1 overflow-y-auto space-y-2 pb-20 md:pb-0">
           {sessions.length === 0 ? (
             <p className="text-sm text-text-muted text-center mt-4">Chưa có lịch sử trò chuyện</p>
           ) : (
             sessions.map(session => (
               <button
                 key={session.id}
-                onClick={() => setCurrentSessionId(session.id)}
+                onClick={() => {
+                  setCurrentSessionId(session.id);
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full text-left px-3 py-2.5 rounded-[var(--radius-md)] text-sm transition-colors flex items-center gap-2 ${
                   currentSessionId === session.id 
                     ? 'bg-primary text-primary-fg font-medium shadow-sm' 
