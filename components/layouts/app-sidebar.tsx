@@ -28,7 +28,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
       {/* Desktop Top Navbar */}
       <header className="hidden md:flex items-center justify-between border-b border-border bg-surface/50 backdrop-blur-xl px-6 py-3 sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <Heart className="w-6 h-6 text-primary fill-primary" />
+          <img src="/logo.png" alt="Dating Journal Logo" className="w-8 h-8 object-contain" />
           <span className="font-heading font-bold text-xl tracking-tight text-text mr-8">Dating Journal</span>
         </div>
 
