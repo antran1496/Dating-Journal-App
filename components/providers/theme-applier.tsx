@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useTheme } from '@/components/providers/theme-provider';
+import { useLocale } from '@/components/providers/locale-provider';
 import { FONT_PAIRS } from '@/lib/theme/theme-presets';
 import type { UserPreferences } from '@/types';
 
@@ -15,6 +16,7 @@ interface ThemeApplierProps {
  */
 export function ThemeApplier({ preferences }: ThemeApplierProps) {
   const { setTheme, setPrimaryColor, setFontPair } = useTheme();
+  const { setLocale } = useLocale();
 
   useEffect(() => {
     if (!preferences) return;
@@ -38,7 +40,13 @@ export function ThemeApplier({ preferences }: ThemeApplierProps) {
         setFontPair(pair.id);
       }
     }
-  }, [preferences, setTheme, setPrimaryColor, setFontPair]);
+
+    // Apply locale
+    if (preferences.locale) {
+      setLocale(preferences.locale);
+    }
+  }, [preferences, setTheme, setPrimaryColor, setFontPair, setLocale]);
 
   return null;
 }
+

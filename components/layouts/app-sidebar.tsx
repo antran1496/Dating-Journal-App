@@ -5,15 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Heart, Calendar, User, Sparkles, MessageCircle, Settings, MoreHorizontal } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
+import { useLocale } from '@/components/providers/locale-provider';
 import type { Profile } from '@/types';
-
-const navItems = [
-  { label: 'Tổng quan', href: '/dashboard', icon: Heart },
-  { label: 'Hẹn hò', href: '/dates', icon: Calendar },
-  { label: 'Khám phá', href: '/insights', icon: Sparkles },
-  { label: 'Chat AI', href: '/chat', icon: MessageCircle },
-  { label: 'Cài đặt', href: '/settings', icon: Settings },
-];
 
 interface AppSidebarProps {
   profile: Profile | null;
@@ -21,7 +14,15 @@ interface AppSidebarProps {
 
 export function AppSidebar({ profile }: AppSidebarProps) {
   const pathname = usePathname();
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = React.useState(false);
+  const { t } = useLocale();
+
+  const navItems = [
+    { label: t('nav.dashboard'), href: '/dashboard', icon: Heart },
+    { label: t('nav.dates'), href: '/dates', icon: Calendar },
+    { label: t('nav.insights'), href: '/insights', icon: Sparkles },
+    { label: t('nav.chat'), href: '/chat', icon: MessageCircle },
+    { label: t('nav.settings'), href: '/settings', icon: Settings },
+  ];
 
   return (
     <>

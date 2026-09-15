@@ -196,5 +196,6 @@ export function getDefaultPreferences(): Omit<UserPreferences, 'profile_id'> {
     primary_color: '#ff6b81',
     font_heading: 'Playfair Display',
     font_body: 'Inter',
+    locale: 'vi',
   };
 }

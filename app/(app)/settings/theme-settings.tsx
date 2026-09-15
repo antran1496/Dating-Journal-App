@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useCallback, useRef } from 'react';
-import { Sun, Moon, Monitor, Check, Palette } from 'lucide-react';
+import { Sun, Moon, Monitor, Check, Palette, Globe } from 'lucide-react';
 import { useTheme } from '@/components/providers/theme-provider';
+import { useLocale } from '@/components/providers/locale-provider';
 import { useUserPreferences } from '@/hooks/use-user-preferences';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -12,9 +13,11 @@ import {
   findFontPairByHeading,
 } from '@/lib/theme/theme-presets';
 import { preloadAllFonts } from '@/lib/theme/font-loader';
+import type { Locale } from '@/lib/i18n/translations';
 
 export default function ThemeSettingsPage() {
   const { theme, setTheme, primaryColor, setPrimaryColor, fontHeading, setFontPair } = useTheme();
+  const { locale, setLocale, t } = useLocale();
   const { preferences, updatePreferences } = useUserPreferences();
 
   // Debounced save to Supabase
@@ -64,217 +67,161 @@ export default function ThemeSettingsPage() {
     debouncedSave({ font_heading: pair.heading, font_body: pair.body });
   };
 
+  const handleLocaleChange = (newLocale: Locale) => {
+    setLocale(newLocale);
+    debouncedSave({ locale: newLocale });
+  };
+
   // Find currently active palette/font
   const activePalette = findPaletteByColor(primaryColor);
   const activeFontPair = findFontPairByHeading(fontHeading);
 
   const themeModes = [
-    { mode: 'light' as const, label: 'Sáng', icon: Sun, description: 'Giao diện sáng, nhẹ nhàng' },
-    { mode: 'dark' as const, label: 'Tối', icon: Moon, description: 'Giao diện tối, dễ chịu mắt' },
-    { mode: 'system' as const, label: 'Tự động', icon: Monitor, description: 'Theo thiết bị của bạn' },
+    { mode: 'light' as const, label: t('theme.light'), icon: Sun },
+    { mode: 'dark' as const, label: t('theme.dark'), icon: Moon },
+    { mode: 'system' as const, label: t('theme.auto'), icon: Monitor },
+  ];
+
+  const languages = [
+    { code: 'vi' as Locale, label: 'Tiếng Việt', flag: '🇻🇳' },
+    { code: 'en' as Locale, label: 'English', flag: '🇬🇧' },
   ];
 
   return (
-    <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
-      {/* Header */}
-      <div>
-        <h1 className="font-heading text-2xl font-bold text-text flex items-center gap-2">
-          <Palette className="w-7 h-7 text-primary" />
-          Tùy chỉnh giao diện
-        </h1>
-        <p className="text-text-muted text-sm mt-1">
-          Cá nhân hóa màu sắc, font chữ và chế độ hiển thị
-        </p>
-      </div>
+    <div className="space-y-5 animate-[fadeIn_0.3s_ease-out]">
 
       {/* ---- Section 1: Theme Mode ---- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Chế độ hiển thị</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {themeModes.map(({ mode, label, icon: Icon, description }) => {
-              const isActive = theme === mode;
-              return (
-                <button
-                  key={mode}
-                  onClick={() => handleThemeChange(mode)}
-                  className={`relative flex flex-col items-center gap-3 p-5 rounded-[var(--radius-lg)] border-2 transition-all duration-200 cursor-pointer group ${
-                    isActive
-                      ? 'border-primary bg-primary/5 shadow-sm'
-                      : 'border-border hover:border-primary/30 hover:bg-surface-hover'
-                  }`}
-                >
-                  {isActive && (
-                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="w-3 h-3 text-primary-fg" />
-                    </div>
-                  )}
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                      isActive
-                        ? 'bg-primary text-primary-fg scale-110'
-                        : 'bg-surface-hover text-text-muted group-hover:scale-105'
-                    }`}
-                  >
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div className="text-center">
-                    <p className={`font-medium text-sm ${isActive ? 'text-primary' : 'text-text'}`}>
-                      {label}
-                    </p>
-                    <p className="text-xs text-text-muted mt-0.5">{description}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </CardBody>
-      </Card>
+      <div>
+        <p className="text-sm font-medium text-text mb-2">{t('theme.display_mode')}</p>
+        <div className="grid grid-cols-3 gap-2">
+          {themeModes.map(({ mode, label, icon: Icon }) => {
+            const isActive = theme === mode;
+            return (
+              <button
+                key={mode}
+                onClick={() => handleThemeChange(mode)}
+                className={`flex flex-col items-center gap-1.5 py-3 rounded-[var(--radius-md)] border-2 transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/30'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-text-muted'}`} />
+                <span className={`text-xs font-medium ${isActive ? 'text-primary' : 'text-text-muted'}`}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* ---- Section 2: Color Palette ---- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Màu chủ đạo</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {COLOR_PALETTES.map((palette) => {
-              const isActive = activePalette?.id === palette.id;
-              return (
-                <button
-                  key={palette.id}
-                  onClick={() => handleColorChange(palette.id)}
-                  className={`relative flex items-center gap-3 p-3 rounded-[var(--radius-md)] border-2 transition-all duration-200 cursor-pointer group ${
-                    isActive
-                      ? 'border-current shadow-sm'
-                      : 'border-border hover:border-current/30'
-                  }`}
-                  style={{
-                    // Use the palette color for the border when active
-                    color: palette.primary,
-                  }}
-                >
-                  {/* Color swatch */}
-                  <div className="relative flex-shrink-0">
-                    <div
-                      className={`w-10 h-10 rounded-full transition-transform duration-200 ${
-                        isActive ? 'scale-110 ring-2 ring-offset-2 ring-offset-surface' : 'group-hover:scale-105'
-                      }`}
-                      style={{
-                        background: `linear-gradient(135deg, ${palette.primary}, ${palette.accent})`,
-                        outlineColor: isActive ? palette.primary : undefined,
-                      }}
-                    />
-                    {isActive && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white drop-shadow-md" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Label */}
-                  <div className="text-left min-w-0">
-                    <p className="text-xs text-text-muted">{palette.emoji}</p>
-                    <p className={`text-sm font-medium truncate ${isActive ? '' : 'text-text'}`}>
-                      {palette.name}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Live Preview */}
-          <div className="mt-5 p-4 rounded-[var(--radius-lg)] bg-surface-hover border border-border">
-            <p className="text-xs text-text-muted mb-3">Xem trước</p>
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-primary animate-[pulse-glow_2s_ease-in-out_infinite]" />
-              <span className="text-sm font-medium text-text">Màu chủ đạo hiện tại</span>
-              <span
-                className="ml-auto text-xs font-mono px-2 py-1 rounded-[var(--radius-sm)] bg-primary/10 text-primary"
+      <div>
+        <p className="text-sm font-medium text-text mb-2">{t('theme.primary_color')}</p>
+        <div className="flex flex-wrap gap-2">
+          {COLOR_PALETTES.map((palette) => {
+            const isActive = activePalette?.id === palette.id;
+            return (
+              <button
+                key={palette.id}
+                onClick={() => handleColorChange(palette.id)}
+                title={palette.name}
+                className={`relative w-10 h-10 rounded-full transition-all duration-200 cursor-pointer ${
+                  isActive ? 'ring-2 ring-offset-2 ring-offset-surface scale-110' : 'hover:scale-110'
+                }`}
+                style={{
+                  background: `linear-gradient(135deg, ${palette.primary}, ${palette.accent})`,
+                  ringColor: isActive ? palette.primary : undefined,
+                }}
               >
-                {primaryColor}
-              </span>
-            </div>
-            <div className="flex gap-2 mt-3">
-              <div className="flex-1 h-2 rounded-full bg-primary" />
-              <div className="flex-1 h-2 rounded-full bg-accent" />
-              <div className="flex-1 h-2 rounded-full bg-primary/30" />
-            </div>
-          </div>
-        </CardBody>
-      </Card>
+                {isActive && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Check className="w-4 h-4 text-white drop-shadow-md" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* ---- Section 3: Font Pair ---- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Font chữ</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <div className="space-y-3">
-            {FONT_PAIRS.map((pair) => {
-              const isActive = activeFontPair?.id === pair.id;
-              return (
-                <button
-                  key={pair.id}
-                  onClick={() => handleFontChange(pair.id)}
-                  className={`w-full flex items-center gap-4 p-4 rounded-[var(--radius-md)] border-2 transition-all duration-200 cursor-pointer text-left group ${
-                    isActive
-                      ? 'border-primary bg-primary/5 shadow-sm'
-                      : 'border-border hover:border-primary/30 hover:bg-surface-hover'
+      <div>
+        <p className="text-sm font-medium text-text mb-2">{t('theme.font')}</p>
+        <div className="space-y-2">
+          {FONT_PAIRS.map((pair) => {
+            const isActive = activeFontPair?.id === pair.id;
+            return (
+              <button
+                key={pair.id}
+                onClick={() => handleFontChange(pair.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-md)] border-2 transition-all duration-200 cursor-pointer text-left ${
+                  isActive
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/30'
+                }`}
+              >
+                <div
+                  className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    isActive ? 'border-primary bg-primary' : 'border-border'
                   }`}
                 >
-                  {/* Check indicator */}
-                  <div
-                    className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                      isActive
-                        ? 'border-primary bg-primary'
-                        : 'border-border group-hover:border-primary/50'
-                    }`}
+                  {isActive && <Check className="w-2.5 h-2.5 text-primary-fg" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="text-sm font-bold text-text truncate"
+                    style={{ fontFamily: `"${pair.heading}", serif` }}
                   >
-                    {isActive && <Check className="w-3 h-3 text-primary-fg" />}
-                  </div>
+                    {pair.sampleHeading}
+                  </p>
+                  <p
+                    className="text-xs text-text-muted"
+                    style={{ fontFamily: `"${pair.body}", sans-serif` }}
+                  >
+                    {pair.sampleBody}
+                  </p>
+                </div>
+                <span
+                  className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                    isActive ? 'bg-primary text-primary-fg' : 'bg-surface-hover text-text-muted'
+                  }`}
+                >
+                  {pair.name}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-                  {/* Sample text */}
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="text-lg font-bold text-text truncate"
-                      style={{ fontFamily: `"${pair.heading}", serif` }}
-                    >
-                      {pair.sampleHeading}
-                    </p>
-                    <p
-                      className="text-sm text-text-muted mt-0.5"
-                      style={{ fontFamily: `"${pair.body}", sans-serif` }}
-                    >
-                      {pair.sampleBody}
-                    </p>
-                  </div>
-
-                  {/* Label badge */}
-                  <div className="flex-shrink-0">
-                    <span
-                      className={`text-xs font-medium px-2.5 py-1 rounded-[var(--radius-full)] ${
-                        isActive
-                          ? 'bg-primary text-primary-fg'
-                          : 'bg-surface-hover text-text-muted'
-                      }`}
-                    >
-                      {pair.name}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </CardBody>
-      </Card>
+      {/* ---- Section 4: Language ---- */}
+      <div>
+        <p className="text-sm font-medium text-text mb-2">{t('theme.language')}</p>
+        <div className="grid grid-cols-2 gap-2">
+          {languages.map(({ code, label, flag }) => {
+            const isActive = locale === code;
+            return (
+              <button
+                key={code}
+                onClick={() => handleLocaleChange(code)}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-md)] border-2 transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/30'
+                }`}
+              >
+                <span className="text-lg">{flag}</span>
+                <span className={`text-sm font-medium ${isActive ? 'text-primary' : 'text-text'}`}>{label}</span>
+                {isActive && <Check className="w-4 h-4 text-primary ml-auto" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Auto-save notice */}
       <p className="text-center text-xs text-text-muted pb-4">
-        ✨ Mọi thay đổi được lưu tự động
+        {t('theme.auto_save')}
       </p>
     </div>
   );

@@ -7,6 +7,7 @@ import { ProfileClient } from './profile-settings';
 import ThemeSettingsClient from './theme-settings';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useLocale } from '@/components/providers/locale-provider';
 
 interface SettingsDashboardProps {
   profile: Profile;
@@ -19,6 +20,7 @@ export function SettingsDashboard({ profile, couple, userId }: SettingsDashboard
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+  const { t } = useLocale();
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -36,7 +38,7 @@ export function SettingsDashboard({ profile, couple, userId }: SettingsDashboard
             activeTab === 'profile' ? 'bg-surface shadow-sm text-text' : 'text-text-muted hover:text-text'
           }`}
         >
-          <User size={16} /> Hồ sơ
+          <User size={16} /> {t('settings.profile')}
         </button>
         <button
           onClick={() => setActiveTab('theme')}
@@ -44,7 +46,7 @@ export function SettingsDashboard({ profile, couple, userId }: SettingsDashboard
             activeTab === 'theme' ? 'bg-surface shadow-sm text-text' : 'text-text-muted hover:text-text'
           }`}
         >
-          <Palette size={16} /> Giao diện
+          <Palette size={16} /> {t('settings.theme')}
         </button>
       </div>
 
@@ -66,7 +68,7 @@ export function SettingsDashboard({ profile, couple, userId }: SettingsDashboard
           className="w-full flex items-center justify-center gap-2 py-3 rounded-[var(--radius-md)] text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
         >
           <LogOut size={16} />
-          {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
+          {isLoggingOut ? t('settings.logging_out') : t('settings.logout')}
         </button>
       </div>
     </div>

@@ -46,6 +46,7 @@ export type UserPreferences = {
   primary_color: string;
   font_heading: string;
   font_body: string;
+  locale: 'vi' | 'en';
 };
 
 export type Nickname = {
