@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, Palette } from 'lucide-react';
+import { User, Palette, LogOut } from 'lucide-react';
 import type { Profile, CoupleWithMembers } from '@/types';
 import { ProfileClient } from './profile-settings';
 import ThemeSettingsClient from './theme-settings';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
 interface SettingsDashboardProps {
   profile: Profile;
@@ -14,6 +16,15 @@ interface SettingsDashboardProps {
 
 export function SettingsDashboard({ profile, couple, userId }: SettingsDashboardProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'theme'>('profile');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
   return (
     <div className="space-y-6">
@@ -45,6 +56,18 @@ export function SettingsDashboard({ profile, couple, userId }: SettingsDashboard
         {activeTab === 'theme' && (
           <ThemeSettingsClient />
         )}
+      </div>
+
+      {/* Logout */}
+      <div className="pt-4 border-t border-border">
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-[var(--radius-md)] text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+        >
+          <LogOut size={16} />
+          {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
+        </button>
       </div>
     </div>
   );

@@ -102,9 +102,9 @@ export default async function DatesPage() {
                 
                 <div className="flex flex-col justify-center min-w-0 flex-1">
                   <h3 className="font-semibold text-text truncate mb-0.5">
-                    {date.location_name ?? 'Không có địa điểm'}
+                    {formatDate(date.date_time ?? date.created_at, date.end_date)}
                   </h3>
-                  <p className="text-text-muted text-xs mb-1.5">{formatDate(date.date_time ?? date.created_at, date.end_date)}</p>
+                  <p className="text-text-muted text-xs mb-1.5">📍 {date.location_name ?? 'Không có địa điểm'}</p>
                   
                   <div className="flex items-center gap-2 mt-auto">
                     {date.rating && (

@@ -28,15 +28,21 @@ export default async function DashboardPage() {
   if (!user) redirect('/login');
 
   // Kiểm tra có couple chưa
-  const { data: memberData } = await supabase
+  const { data: memberData, error: memberError } = await supabase
     .from('couple_members')
     .select('couple_id')
     .eq('profile_id', user.id)
     .maybeSingle();
 
+  if (memberError) throw new Error('Không thể tải dữ liệu. Vui lòng thử lại.');
   if (!memberData) redirect('/couple/setup');
 
-  const recentDates = await getRecentDates(memberData.couple_id);
+  let recentDates: DateEntry[] = [];
+  try {
+    recentDates = await getRecentDates(memberData.couple_id);
+  } catch {
+    // Silently fail — show empty list instead of crashing
+  }
 
   return (
     <div className="space-y-8">
