@@ -130,8 +130,8 @@ export default function ThemeSettingsPage() {
                 }`}
                 style={{
                   background: `linear-gradient(135deg, ${palette.primary}, ${palette.accent})`,
-                  ringColor: isActive ? palette.primary : undefined,
-                }}
+                  ...(isActive ? { '--tw-ring-color': palette.primary } : {}),
+                } as React.CSSProperties}
               >
                 {isActive && (
                   <div className="absolute inset-0 flex items-center justify-center">
