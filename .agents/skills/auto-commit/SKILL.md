@@ -7,6 +7,10 @@ description: Kích hoạt khi user yêu cầu "lưu code", "đẩy code", "push 
 
 Skill này tự động hóa quy trình commit và push code bằng Git, tuân thủ chặt chẽ luồng làm việc của dự án.
 
+> [!IMPORTANT]
+> **QUY TẮC TỐI THƯỢNG:** 
+> KHÔNG BAO GIỜ được tự ý thực hiện commit hay push code nếu USER CHƯA YÊU CẦU RÕ RÀNG (ví dụ như gọi `/auto-commit`, hoặc nói "commit đi", "đẩy code nhé"). Nhiệm vụ của Agent chỉ là viết code, báo cáo hoàn thành, và CHỜ LỆNH COMMIT.
+
 ## Trình tự thực hiện (AI phải làm tuần tự):
 
 ### 1. Kiểm tra Branch và Tình trạng Git

@@ -1,8 +1,10 @@
 # Skill: Quy tắc Text & String
 
 ---
+
 name: text-strings
 description: Quy tắc xử lý text, string literal, đa ngôn ngữ, thông báo lỗi, và copy trong Dating Journal App.
+
 ---
 
 ---
@@ -19,11 +21,11 @@ setError(error.message); // "Invalid login credentials"
 
 // ✅ Đúng: Map sang tiếng Việt
 const ERROR_MESSAGES: Record<string, string> = {
-  'Invalid login credentials': 'Email hoặc mật khẩu không đúng',
-  'Email not confirmed': 'Vui lòng xác nhận email trước khi đăng nhập',
-  'User already registered': 'Email này đã được đăng ký',
+  "Invalid login credentials": "Email hoặc mật khẩu không đúng",
+  "Email not confirmed": "Vui lòng xác nhận email trước khi đăng nhập",
+  "User already registered": "Email này đã được đăng ký",
 };
-setError(ERROR_MESSAGES[error.message] ?? 'Đã có lỗi xảy ra, vui lòng thử lại');
+setError(ERROR_MESSAGES[error.message] ?? "Đã có lỗi xảy ra, vui lòng thử lại");
 ```
 
 ---
@@ -66,22 +68,27 @@ const message = `Bạn đã yêu nhau được ${days} ngày`;
 
 // ✅ Dùng Intl API để format số, ngày, tiền tệ
 const formatDate = (date: string) =>
-  new Intl.DateTimeFormat('vi-VN', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
+  new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   }).format(new Date(date));
 // → "12/09/2025"
 
 const formatDateFull = (date: string) =>
-  new Intl.DateTimeFormat('vi-VN', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  new Intl.DateTimeFormat("vi-VN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   }).format(new Date(date));
 // → "Thứ Sáu, 12 tháng 9, 2025"
 
 // ✅ Format số ngày yêu
 const formatDaysCount = (days: number) => {
-  if (days === 0) return 'Hôm nay';
-  if (days === 1) return '1 ngày';
-  return `${days.toLocaleString('vi-VN')} ngày`;
+  if (days === 0) return "Hôm nay";
+  if (days === 1) return "1 ngày";
+  return `${days.toLocaleString("vi-VN")} ngày`;
 };
 ```
 
@@ -94,23 +101,23 @@ const formatDaysCount = (days: number) => {
 const loginSchema = z.object({
   email: z
     .string()
-    .min(1, 'Vui lòng nhập email')
-    .email('Email không đúng định dạng'),
+    .min(1, "Vui lòng nhập email")
+    .email("Email không đúng định dạng"),
   password: z
     .string()
-    .min(1, 'Vui lòng nhập mật khẩu')
-    .min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
+    .min(1, "Vui lòng nhập mật khẩu")
+    .min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
 });
 
 const dateSchema = z.object({
   location_name: z
     .string()
-    .min(1, 'Vui lòng nhập địa điểm')
-    .max(100, 'Địa điểm không được quá 100 ký tự'),
+    .min(1, "Vui lòng nhập địa điểm")
+    .max(100, "Địa điểm không được quá 100 ký tự"),
   rating: z
     .number()
-    .min(1, 'Vui lòng chọn điểm đánh giá')
-    .max(5, 'Điểm đánh giá tối đa là 5'),
+    .min(1, "Vui lòng chọn điểm đánh giá")
+    .max(5, "Điểm đánh giá tối đa là 5"),
 });
 ```
 
@@ -121,15 +128,15 @@ const dateSchema = z.object({
 ```typescript
 // Placeholder phải gợi ý rõ ràng, không chỉ nói "Nhập..."
 // ✅ Tốt
-placeholder="bep_thuy@gmail.com"
-placeholder="Quán cafe Trung Nguyên tầng 5"
-placeholder="Buổi tối hôm nay thật tuyệt, mình đã..."
-placeholder="Lần sau muốn thử món..."
+placeholder = "annie@gmail.com";
+placeholder = "Quán cafe Miền đồng thảo";
+placeholder = "Buổi tối hôm nay thật tuyệt, mình đã...";
+placeholder = "Lần sau muốn thử món...";
 
 // ❌ Tránh
-placeholder="Nhập tên"
-placeholder="..."
-placeholder="Text here"
+placeholder = "Nhập tên";
+placeholder = "...";
+placeholder = "Text here";
 ```
 
 ---
@@ -140,22 +147,24 @@ placeholder="Text here"
 // Các chuỗi trạng thái rỗng phải đủ ngữ cảnh
 export const EMPTY_STATE_TEXT = {
   dates: {
-    title: 'Chưa có buổi hẹn nào',
-    description: 'Câu chuyện tình yêu của bạn đang chờ được ghi lại.\nHãy thêm buổi hẹn đầu tiên!',
-    action: '+ Thêm buổi hẹn đầu tiên',
+    title: "Chưa có buổi hẹn nào",
+    description:
+      "Câu chuyện tình yêu của bạn đang chờ được ghi lại.\nHãy thêm buổi hẹn đầu tiên!",
+    action: "+ Thêm buổi hẹn đầu tiên",
   },
   couple: {
-    title: 'Chưa kết nối với người yêu',
-    description: 'Mời người yêu của bạn tham gia bằng mã kết nối\nđể cùng nhau ghi lại kỷ niệm.',
-    action: 'Tạo mã mời',
+    title: "Chưa kết nối với người yêu",
+    description:
+      "Mời người yêu của bạn tham gia bằng mã kết nối\nđể cùng nhau ghi lại kỷ niệm.",
+    action: "Tạo mã mời",
   },
 } as const;
 
 // Loading state
-const LOADING_TEXT = 'Đang tải...';
-const SAVING_TEXT = 'Đang lưu...';
-const DELETING_TEXT = 'Đang xóa...';
-const UPLOADING_TEXT = 'Đang tải ảnh lên...';
+const LOADING_TEXT = "Đang tải...";
+const SAVING_TEXT = "Đang lưu...";
+const DELETING_TEXT = "Đang xóa...";
+const UPLOADING_TEXT = "Đang tải ảnh lên...";
 ```
 
 ---

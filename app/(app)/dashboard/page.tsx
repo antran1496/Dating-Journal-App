@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { CoupleCounter } from '@/components/features/couple-counter';
+import { MonthlyCalendar } from '@/components/features/monthly-calendar';
 import type { DateEntry } from '@/types';
 
 async function getRecentDates(coupleId: string): Promise<DateEntry[]> {
@@ -53,6 +54,9 @@ export default async function DashboardPage() {
 
       {/* Couple Counter — Client Component */}
       <CoupleCounter />
+
+      {/* Monthly Calendar — Client Component */}
+      <MonthlyCalendar />
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
