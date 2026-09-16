@@ -1,49 +1,72 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { MapPin, Calendar, ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { RatingStars } from './rating-stars';
-import { MultiImageUpload } from './multi-image-upload';
-import { dateFormSchema, type DateFormValues } from '@/types/forms';
-import type { DateEntry } from '@/types';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import type { DateEntry } from "@/types";
+import { dateFormSchema, type DateFormValues } from "@/types/forms";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Calendar, MapPin } from "lucide-react";
+import React from "react";
+import { useForm } from "react-hook-form";
+import { MultiImageUpload } from "./multi-image-upload";
+import { RatingStars } from "./rating-stars";
 
 interface DateFormProps {
   defaultValues?: Partial<DateEntry>;
-  onSubmit: (values: DateFormValues & { checkin_image_url?: string; checkin_image_urls?: string[] }) => Promise<void>;
+  onSubmit: (
+    values: DateFormValues & {
+      checkin_image_url?: string;
+      checkin_image_urls?: string[];
+    },
+  ) => Promise<void>;
   onCancel?: () => void;
   isLoading?: boolean;
 }
 
-export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateFormProps) {
+export function DateForm({
+  defaultValues,
+  onSubmit,
+  onCancel,
+  isLoading,
+}: DateFormProps) {
   const [imageUrls, setImageUrls] = React.useState<string[]>(
-    defaultValues?.checkin_image_urls ?? (defaultValues?.checkin_image_url ? [defaultValues.checkin_image_url] : [])
+    defaultValues?.checkin_image_urls ??
+      (defaultValues?.checkin_image_url
+        ? [defaultValues.checkin_image_url]
+        : []),
   );
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<DateFormValues>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<DateFormValues>({
     resolver: zodResolver(dateFormSchema),
     defaultValues: {
-      location_name: defaultValues?.location_name ?? '',
-      date_time: defaultValues?.date_time ? new Date(defaultValues.date_time).toISOString().slice(0, 10) : '',
-      end_date: defaultValues?.end_date ? new Date(defaultValues.end_date).toISOString().slice(0, 10) : '',
-      pros: defaultValues?.pros ?? '',
-      cons: defaultValues?.cons ?? '',
-      wish_next_time: defaultValues?.wish_next_time ?? '',
+      location_name: defaultValues?.location_name ?? "",
+      date_time: defaultValues?.date_time
+        ? new Date(defaultValues.date_time).toISOString().slice(0, 10)
+        : "",
+      end_date: defaultValues?.end_date
+        ? new Date(defaultValues.end_date).toISOString().slice(0, 10)
+        : "",
+      pros: defaultValues?.pros ?? "",
+      cons: defaultValues?.cons ?? "",
+      wish_next_time: defaultValues?.wish_next_time ?? "",
       rating: defaultValues?.rating ?? undefined,
     },
   });
 
-  const rating = watch('rating');
+  const rating = watch("rating");
 
   const handleFormSubmit = async (values: DateFormValues) => {
     await onSubmit({
       ...values,
       checkin_image_urls: imageUrls,
-      checkin_image_url: imageUrls.length > 0 ? imageUrls[0] : undefined
+      checkin_image_url: imageUrls.length > 0 ? imageUrls[0] : undefined,
     });
   };
 
@@ -51,15 +74,17 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Ảnh check-in */}
       <div>
-        <label className="block text-sm font-medium text-text mb-2">📸 Ảnh buổi hẹn (tối đa 9 ảnh)</label>
+        <label className="block text-sm font-medium text-text mb-2">
+          📸 Ảnh buổi hẹn (tối đa 9 ảnh)
+        </label>
         <MultiImageUpload value={imageUrls} onChange={setImageUrls} />
       </div>
 
       {/* Địa điểm */}
       <Input
-        {...register('location_name')}
+        {...register("location_name")}
         label="📍 Địa điểm *"
-        placeholder="Cafe Runam, nhà hàng Cục Gạch..."
+        placeholder="Cafe Miền Đồng Thảo..."
         error={errors.location_name?.message}
         icon={<MapPin size={16} />}
         iconPosition="left"
@@ -68,14 +93,14 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
       {/* Thời gian */}
       <div className="grid grid-cols-2 gap-4">
         <Input
-          {...register('date_time')}
+          {...register("date_time")}
           type="date"
           label="🕐 Ngày bắt đầu"
           icon={<Calendar size={16} />}
           iconPosition="left"
         />
         <Input
-          {...register('end_date')}
+          {...register("end_date")}
           type="date"
           label="🏁 Ngày kết thúc (Tuỳ chọn)"
           icon={<Calendar size={16} />}
@@ -85,20 +110,24 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
 
       {/* Rating */}
       <div>
-        <label className="block text-sm font-medium text-text mb-2">⭐ Đánh giá buổi hẹn</label>
+        <label className="block text-sm font-medium text-text mb-2">
+          ⭐ Đánh giá buổi hẹn
+        </label>
         <RatingStars
           value={rating}
-          onChange={(v) => setValue('rating', v, { shouldValidate: true })}
+          onChange={(v) => setValue("rating", v, { shouldValidate: true })}
           size="lg"
         />
         {errors.rating && (
-          <p className="mt-1 text-xs text-[var(--color-error)]">{errors.rating.message}</p>
+          <p className="mt-1 text-xs text-[var(--color-error)]">
+            {errors.rating.message}
+          </p>
         )}
       </div>
 
       {/* Điểm cộng */}
       <Textarea
-        {...register('pros')}
+        {...register("pros")}
         label="✅ Điểm hay (Pros)"
         placeholder="Không khí lãng mạn, đồ ăn ngon, được nắm tay nhau..."
         maxLength={500}
@@ -107,7 +136,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
 
       {/* Điểm trừ */}
       <Textarea
-        {...register('cons')}
+        {...register("cons")}
         label="🔧 Điểm cần cải thiện (Cons)"
         placeholder="Hơi ồn, đường đi xa, thiếu chỗ ngồi riêng tư..."
         maxLength={500}
@@ -116,7 +145,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
 
       {/* Mong muốn lần sau */}
       <Textarea
-        {...register('wish_next_time')}
+        {...register("wish_next_time")}
         label="💭 Muốn thử lần sau"
         placeholder="Lần sau muốn thử đi picnic, xem phim..."
         maxLength={300}
@@ -125,8 +154,13 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
 
       {/* Actions */}
       <div className="flex gap-3 pt-2">
-        <Button type="submit" variant="primary" className="flex-1" isLoading={isLoading}>
-          {defaultValues?.id ? 'Lưu thay đổi' : 'Thêm buổi hẹn 💕'}
+        <Button
+          type="submit"
+          variant="primary"
+          className="flex-1"
+          isLoading={isLoading}
+        >
+          {defaultValues?.id ? "Lưu thay đổi" : "Thêm buổi hẹn 💕"}
         </Button>
         {onCancel && (
           <Button type="button" variant="ghost" onClick={onCancel}>

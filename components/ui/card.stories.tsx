@@ -1,31 +1,32 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { Card, CardHeader, CardTitle, CardBody, CardFooter } from './card';
-import { Button } from './button';
-import { Badge } from './badge';
-import { Heart } from 'lucide-react';
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { Heart } from "lucide-react";
+import { Badge } from "./badge";
+import { Button } from "./button";
+import { Card, CardBody, CardFooter, CardHeader, CardTitle } from "./card";
 
 const meta = {
-  title: 'UI/Card',
+  title: "UI/Card",
   component: Card,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
     docs: {
       description: {
-        component: 'Card component với header, body, footer slots. Hỗ trợ glassmorphism và hover animation.',
+        component:
+          "Card component với header, body, footer slots. Hỗ trợ glassmorphism và hover animation.",
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <div style={{ width: '380px', padding: '1rem' }}>
+      <div style={{ width: "380px", padding: "1rem" }}>
         <Story />
       </div>
     ),
   ],
   argTypes: {
-    glass: { control: 'boolean', description: 'Glassmorphism effect' },
-    hoverable: { control: 'boolean', description: 'Hover lift animation' },
+    glass: { control: "boolean", description: "Glassmorphism effect" },
+    hoverable: { control: "boolean", description: "Hover lift animation" },
   },
 } satisfies Meta<typeof Card>;
 
@@ -47,7 +48,9 @@ export const WithHeader: Story = {
         <CardTitle>Buổi hẹn hò ❤️</CardTitle>
       </CardHeader>
       <CardBody>
-        <p className="text-text-muted text-sm">Nhà hàng Trung Nguyên — Thứ 6, 12/09/2025</p>
+        <p className="text-text-muted text-sm">
+          Nhà hàng Trung Nguyên — Thứ 6, 12/09/2025
+        </p>
       </CardBody>
     </Card>
   ),
@@ -60,11 +63,17 @@ export const WithFooter: Story = {
         <CardTitle>Kỷ niệm 1 năm</CardTitle>
       </CardHeader>
       <CardBody>
-        <p className="text-text-muted text-sm">Một năm trôi qua thật nhanh và đẹp.</p>
+        <p className="text-text-muted text-sm">
+          Một năm trôi qua thật nhanh và đẹp.
+        </p>
       </CardBody>
       <CardFooter className="gap-2">
-        <Button size="sm" variant="primary">Xem chi tiết</Button>
-        <Button size="sm" variant="ghost">Chỉnh sửa</Button>
+        <Button size="sm" variant="primary">
+          Xem chi tiết
+        </Button>
+        <Button size="sm" variant="ghost">
+          Chỉnh sửa
+        </Button>
       </CardFooter>
     </Card>
   ),
@@ -84,9 +93,9 @@ export const Glass: Story = {
   render: (args) => (
     <div
       style={{
-        background: 'linear-gradient(135deg, #ff6b81 0%, #c084fc 100%)',
-        padding: '2rem',
-        borderRadius: '16px',
+        background: "linear-gradient(135deg, #ff6b81 0%, #c084fc 100%)",
+        padding: "2rem",
+        borderRadius: "16px",
       }}
     >
       <Card {...args}>
@@ -104,19 +113,30 @@ export const DateCard: Story = {
     <Card hoverable>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Cafe Terrace</CardTitle>
-          <Badge variant="success" dot>Tuyệt vời</Badge>
+          <CardTitle>Cafe Oasis</CardTitle>
+          <Badge variant="success" dot>
+            Tuyệt vời
+          </Badge>
         </div>
       </CardHeader>
       <CardBody>
-        <p className="text-text-muted text-sm mb-3">Thứ 6, 12/09/2025 · 19:00</p>
-        <p className="text-text text-sm">Buổi tối lãng mạn tại quán cafe trên tầng thượng, nhìn ra toàn cảnh thành phố.</p>
+        <p className="text-text-muted text-sm mb-3">
+          Thứ 6, 12/09/2025 · 19:00
+        </p>
+        <p className="text-text text-sm">
+          Buổi tối lãng mạn tại quán cafe trên tầng thượng, nhìn ra toàn cảnh
+          thành phố.
+        </p>
         <div className="flex items-center gap-1 mt-3 text-primary">
-          {[1,2,3,4,5].map(i => <Heart key={i} size={14} className="fill-primary" />)}
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Heart key={i} size={14} className="fill-primary" />
+          ))}
         </div>
       </CardBody>
       <CardFooter>
-        <Button size="sm" variant="ghost">Xem thêm →</Button>
+        <Button size="sm" variant="ghost">
+          Xem thêm →
+        </Button>
       </CardFooter>
     </Card>
   ),

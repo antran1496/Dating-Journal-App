@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
-import { differenceInDays, differenceInMonths, differenceInYears, addDays, addMonths, addYears } from 'date-fns';
+import { differenceInCalendarDays, differenceInMonths, differenceInYears, addDays, addMonths, addYears } from 'date-fns';
 import type { CoupleWithMembers } from '@/types';
 
 export const COUPLE_QUERY_KEYS = {
@@ -27,7 +27,7 @@ function getNextMilestones(anniversaryDate: Date): Milestone[] {
       milestones.push({
         label: `${days} ngày`,
         date,
-        daysUntil: differenceInDays(date, today),
+        daysUntil: differenceInCalendarDays(date, today),
       });
     }
   }
@@ -39,7 +39,7 @@ function getNextMilestones(anniversaryDate: Date): Milestone[] {
       milestones.push({
         label: `${year} năm`,
         date,
-        daysUntil: differenceInDays(date, today),
+        daysUntil: differenceInCalendarDays(date, today),
       });
     }
   }
@@ -96,7 +96,7 @@ export function useCouple() {
 
   const couple = query.data;
   const anniversaryDate = couple?.anniversary_date ? new Date(couple.anniversary_date) : null;
-  const daysCount = anniversaryDate ? differenceInDays(new Date(), anniversaryDate) : null;
+  const daysCount = anniversaryDate ? differenceInCalendarDays(new Date(), anniversaryDate) + 1 : null;
   const nextMilestones = anniversaryDate ? getNextMilestones(anniversaryDate) : [];
 
   return {
