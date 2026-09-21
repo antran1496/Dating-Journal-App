@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { DatesEmptyState } from '@/components/features/dates-empty-state';
 import type { DateEntry } from '@/types';
 
 function formatDate(dateStr: string | null, endDateStr: string | null = null): string {
@@ -63,19 +64,7 @@ export default async function DatesPage() {
       </div>
 
       {allDates.length === 0 ? (
-        <div className="py-20 flex flex-col items-center justify-center text-center">
-          <p className="text-6xl mb-4">🌸</p>
-          <h2 className="font-heading text-xl font-bold text-text mb-2">Chưa có buổi hẹn nào</h2>
-          <p className="text-text-muted text-sm mb-6 max-w-sm">
-            Hãy bắt đầu ghi lại những buổi hẹn hò để tạo nên câu chuyện tình yêu của riêng bạn!
-          </p>
-          <Link
-            href="/dates/new"
-            className="flex items-center gap-2 px-6 py-3 rounded-[var(--radius-md)] bg-primary text-primary-fg font-medium hover:opacity-90 transition-opacity"
-          >
-            <Plus size={18} /> Ghi buổi hẹn đầu tiên
-          </Link>
-        </div>
+        <DatesEmptyState />
       ) : (
         <div className="flex flex-col gap-4">
           {allDates.map((date) => {

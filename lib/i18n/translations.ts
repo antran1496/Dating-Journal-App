@@ -69,8 +69,39 @@ const translations: Record<Locale, Record<string, string>> = {
     'common.error_load': 'Không thể tải trang',
     'common.error_desc': 'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.',
 
+    // Toast
+    'toast.dateCreated': 'Đã tạo buổi hẹn thành công',
+    'toast.dateUpdated': 'Đã cập nhật buổi hẹn thành công',
+    'toast.dateDeleted': 'Đã xoá buổi hẹn thành công',
+    'toast.profileSaved': 'Đã lưu hồ sơ thành công',
+    'toast.nicknameSaved': 'Đã lưu biệt danh thành công',
+    'toast.error': 'Đã xảy ra lỗi. Vui lòng thử lại.',
+    'toast.deleteConfirmTitle': 'Xác nhận xoá',
+    'toast.deleteConfirmDesc': 'Bạn có chắc chắn muốn xoá? Hành động này không thể hoàn tác.',
+    'toast.cancel': 'Huỷ',
+    'toast.delete': 'Xoá',
+
+    // Empty States
+    'empty.noDates': 'Chưa có buổi hẹn nào',
+    'empty.noDatesDesc': 'Hãy bắt đầu ghi lại những buổi hẹn hò để tạo nên câu chuyện tình yêu của riêng bạn!',
+    'empty.firstDate': 'Ghi buổi hẹn đầu tiên',
+    'empty.noRecentDates': 'Chưa có kỷ niệm nào',
+    'empty.noRecentDatesDesc': 'Hãy ghi lại buổi hẹn đầu tiên của bạn!',
+    'empty.addDate': 'Thêm buổi hẹn',
+    'empty.noChatHistory': 'Chưa có lịch sử trò chuyện',
+    'empty.noChatHistoryDesc': 'Bắt đầu trò chuyện với Cupid AI để nhận gợi ý hẹn hò!',
+    'empty.noCalendarEvents': 'Không có sự kiện trong tháng này',
+    'empty.noCalendarEventsDesc': 'Hãy ghi thêm buổi hẹn mới để xem chúng trên lịch!',
+
     // Auth
     'auth.not_logged_in': 'Chưa đăng nhập',
+
+    // Milestones
+    'milestone.congratulations': '🎉 Chúc mừng!',
+    'milestone.todayMessage': 'Hôm nay là mốc {label} bên nhau!',
+    'milestone.close': 'Đóng',
+    'milestone.celebrate': 'Cùng ăn mừng nào! 🎊',
+    'milestone.upcoming': '🎉 Chỉ còn {days} ngày nữa là mốc {label}!',
   },
   en: {
     // Navigation
@@ -140,8 +171,39 @@ const translations: Record<Locale, Record<string, string>> = {
     'common.error_load': 'Page could not be loaded',
     'common.error_desc': 'An error occurred while loading data. Please try again.',
 
+    // Toast
+    'toast.dateCreated': 'Date created successfully',
+    'toast.dateUpdated': 'Date updated successfully',
+    'toast.dateDeleted': 'Date deleted successfully',
+    'toast.profileSaved': 'Profile saved successfully',
+    'toast.nicknameSaved': 'Nickname saved successfully',
+    'toast.error': 'An error occurred. Please try again.',
+    'toast.deleteConfirmTitle': 'Confirm deletion',
+    'toast.deleteConfirmDesc': 'Are you sure you want to delete? This action cannot be undone.',
+    'toast.cancel': 'Cancel',
+    'toast.delete': 'Delete',
+
+    // Empty States
+    'empty.noDates': 'No dates yet',
+    'empty.noDatesDesc': 'Start recording your dates to create your own love story!',
+    'empty.firstDate': 'Record first date',
+    'empty.noRecentDates': 'No memories yet',
+    'empty.noRecentDatesDesc': 'Record your first date!',
+    'empty.addDate': 'Add date',
+    'empty.noChatHistory': 'No chat history',
+    'empty.noChatHistoryDesc': 'Start chatting with Cupid AI for date suggestions!',
+    'empty.noCalendarEvents': 'No events this month',
+    'empty.noCalendarEventsDesc': 'Record more dates to see them on the calendar!',
+
     // Auth
     'auth.not_logged_in': 'Not logged in',
+
+    // Milestones
+    'milestone.congratulations': '🎉 Congratulations!',
+    'milestone.todayMessage': 'Today marks {label} together!',
+    'milestone.close': 'Close',
+    'milestone.celebrate': 'Let\'s celebrate! 🎊',
+    'milestone.upcoming': '🎉 Only {days} days until {label}!',
   },
 };
 

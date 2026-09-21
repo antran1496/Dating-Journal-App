@@ -12,6 +12,9 @@ import { ImageUpload } from './image-upload';
 import { profileFormSchema, type ProfileFormValues } from '@/types/forms';
 import type { Profile } from '@/types';
 
+import { useToast } from '@/components/ui/toast';
+import { useLocale } from '@/components/providers/locale-provider';
+
 interface ProfileFormProps {
   profile: Profile;
   onSuccess?: () => void;
@@ -23,6 +26,8 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatar_url);
   const queryClient = useQueryClient();
   const supabase = createClient();
+  const { toast } = useToast();
+  const { t } = useLocale();
 
   const { register, handleSubmit, formState: { errors } } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -43,12 +48,14 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
 
     if (updateError) {
       setError('Không thể cập nhật, vui lòng thử lại');
+      toast({ type: 'error', title: t('toast.error') });
       setIsLoading(false);
       return;
     }
 
     // Invalidate couple query to refresh member data
     queryClient.invalidateQueries({ queryKey: ['couple'] });
+    toast({ type: 'success', title: t('toast.profileSaved') });
     onSuccess?.();
     setIsLoading(false);
   };

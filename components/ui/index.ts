@@ -8,3 +8,4 @@ export * from './badge';
 export * from './toast';
 export * from './loading-skeleton';
 export * from './empty-state';
+export * from './confirm-modal';

@@ -8,9 +8,10 @@ export interface EmptyStateProps {
   action?: () => void;
   actionLabel?: string;
   className?: string;
+  children?: ReactNode;
 }
 
-export function EmptyState({ icon, title, description, action, actionLabel, className = '' }: EmptyStateProps) {
+export function EmptyState({ icon, title, description, action, actionLabel, className = '', children }: EmptyStateProps) {
   return (
     <div className={`flex flex-col items-center justify-center p-8 text-center bg-surface border border-dashed border-border rounded-[var(--radius-lg)] ${className}`}>
       {icon && (
@@ -27,6 +28,7 @@ export function EmptyState({ icon, title, description, action, actionLabel, clas
           {actionLabel}
         </Button>
       )}
+      {children}
     </div>
   );
 }
