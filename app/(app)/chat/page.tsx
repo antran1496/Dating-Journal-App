@@ -13,6 +13,7 @@ export default function ChatPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [chatInstanceKey, setChatInstanceKey] = useState<string>('new');
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -43,6 +44,7 @@ export default function ChatPage() {
         if (sessionData && sessionData.length > 0) {
           setSessions(sessionData as AiChatSession[]);
           setCurrentSessionId(sessionData[0].id);
+          setChatInstanceKey(sessionData[0].id);
         }
       }
       setIsLoading(false);
@@ -75,15 +77,20 @@ export default function ChatPage() {
       body: JSON.stringify({ message, session_id: sessionId }),
     });
     
-    if (!res.ok) throw new Error('API failed');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại!');
+    }
     
     const { data } = await res.json();
     
     // Add AI message to state
-    setMessages((prev) => [...prev, data.message]);
+    if (data?.message) {
+      setMessages((prev) => [...prev, data.message]);
+    }
     
-    // If it was a new session, update sessions list
-    if (!sessionId && data.session_id) {
+    // If it was a new session, update sessions list and session ID without remounting AiChat
+    if (!sessionId && data?.session_id) {
       setCurrentSessionId(data.session_id);
       // Fetch sessions again to update sidebar
       const { data: { user } } = await supabase.auth.getUser();
@@ -105,7 +112,18 @@ export default function ChatPage() {
 
   const startNewChat = () => {
     setCurrentSessionId(null);
+    setChatInstanceKey(`new-${Date.now()}`);
     setMessages([]);
+    setIsSidebarOpen(false);
+  };
+
+  const selectSession = (sessionId: string) => {
+    if (sessionId === currentSessionId) {
+      setIsSidebarOpen(false);
+      return;
+    }
+    setCurrentSessionId(sessionId);
+    setChatInstanceKey(sessionId);
     setIsSidebarOpen(false);
   };
 
@@ -118,13 +136,13 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="animate-[fadeIn_0.3s_ease-out] flex flex-col md:flex-row gap-6 h-[calc(100dvh-160px)] min-h-[500px]">
+    <div className="animate-[fadeIn_0.3s_ease-out] flex flex-col md:flex-row gap-3 md:gap-6 h-[calc(100dvh-13.5rem-env(safe-area-inset-bottom,0px))] md:h-[calc(100dvh-160px)] md:min-h-[500px]">
       
       {/* Mobile Header Toggle */}
-      <div className="md:hidden flex items-center justify-between bg-surface border border-border p-3 rounded-[var(--radius-lg)]">
-        <span className="font-heading font-medium text-text">Đoạn chat</span>
-        <Button variant="secondary" onClick={() => setIsSidebarOpen(true)} className="h-8 px-2">
-          <Menu className="w-4 h-4" />
+      <div className="md:hidden flex items-center justify-between bg-surface border border-border px-3 py-2 rounded-[var(--radius-md)] shrink-0">
+        <span className="font-heading font-medium text-text text-sm">Đoạn chat</span>
+        <Button variant="secondary" onClick={() => setIsSidebarOpen(true)} className="h-7 px-2.5 text-xs">
+          <Menu className="w-3.5 h-3.5 mr-1" /> Lịch sử
         </Button>
       </div>
 
@@ -158,10 +176,7 @@ export default function ChatPage() {
             sessions.map(session => (
               <button
                 key={session.id}
-                onClick={() => {
-                  setCurrentSessionId(session.id);
-                  setIsSidebarOpen(false);
-                }}
+                onClick={() => selectSession(session.id)}
                 className={`w-full text-left px-3 py-2.5 rounded-[var(--radius-md)] text-sm transition-colors flex items-center gap-2 ${
                   currentSessionId === session.id 
                     ? 'bg-primary text-primary-fg font-medium shadow-sm' 
@@ -178,11 +193,8 @@ export default function ChatPage() {
 
       {/* Main Chat Area */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* We unmount and remount AiChat when currentSessionId changes to reset internal state if needed, 
-            or we can just let AiChat react to props. Since AiChat has internal optimistic state, 
-            using a key forces a clean remount when switching sessions. */}
         <AiChat 
-          key={currentSessionId || 'new'}
+          key={chatInstanceKey}
           initialMessages={messages}
           sessionId={currentSessionId}
           profile={profile}

@@ -2,17 +2,44 @@ import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
+const FALLBACK_MODELS = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+
+async function generateWithModelFallback(params: {
+  systemInstruction?: string;
+  contents: any;
+  maxOutputTokens?: number;
+  temperature?: number;
+}): Promise<string> {
+  let lastError: any = null;
+  for (const model of FALLBACK_MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: params.contents,
+        config: {
+          systemInstruction: params.systemInstruction,
+          maxOutputTokens: params.maxOutputTokens ?? 2048,
+          temperature: params.temperature ?? 0.8,
+        },
+      });
+      if (response.text !== undefined && response.text !== null) {
+        return response.text;
+      }
+    } catch (err: any) {
+      console.warn(`[Gemini] Model ${model} failed (${err?.status || err?.message}), trying fallback...`);
+      lastError = err;
+    }
+  }
+  throw lastError ?? new Error('All Gemini fallback models failed');
+}
+
 export async function generateText(systemPrompt: string, userPrompt: string): Promise<string> {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3.6-flash',
+  return generateWithModelFallback({
+    systemInstruction: systemPrompt,
     contents: userPrompt,
-    config: {
-      systemInstruction: systemPrompt,
-      maxOutputTokens: 2048,
-      temperature: 0.8,
-    },
+    maxOutputTokens: 2048,
+    temperature: 0.8,
   });
-  return response.text ?? '';
 }
 
 export async function chatWithHistory(
@@ -20,17 +47,26 @@ export async function chatWithHistory(
   history: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>,
   userMessage: string
 ): Promise<string> {
-  const chat = ai.chats.create({
-    model: 'gemini-3.6-flash',
-    config: {
-      systemInstruction: systemPrompt,
-      maxOutputTokens: 1024,
-      temperature: 0.9,
-    },
-    history,
-  });
-  const response = await chat.sendMessage({ message: userMessage });
-  return response.text ?? '';
+  let lastError: any = null;
+  for (const model of FALLBACK_MODELS) {
+    try {
+      const chat = ai.chats.create({
+        model,
+        config: {
+          systemInstruction: systemPrompt,
+          maxOutputTokens: 1024,
+          temperature: 0.9,
+        },
+        history,
+      });
+      const response = await chat.sendMessage({ message: userMessage });
+      if (response.text) return response.text;
+    } catch (err: any) {
+      console.warn(`[Gemini chatWithHistory] Model ${model} failed, trying fallback...`);
+      lastError = err;
+    }
+  }
+  throw lastError ?? new Error('All Gemini chat fallback models failed');
 }
 
 export async function generateWithImage(
@@ -38,8 +74,8 @@ export async function generateWithImage(
   imageBase64: string,
   mimeType: string = 'image/jpeg'
 ): Promise<string> {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3.6-flash',
+  return generateWithModelFallback({
+    systemInstruction: systemPrompt,
     contents: [
       {
         role: 'user',
@@ -49,11 +85,7 @@ export async function generateWithImage(
         ],
       },
     ],
-    config: {
-      systemInstruction: systemPrompt,
-      maxOutputTokens: 2048,
-      temperature: 0.8,
-    },
+    maxOutputTokens: 2048,
+    temperature: 0.8,
   });
-  return response.text ?? '';
 }
