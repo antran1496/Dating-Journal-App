@@ -84,7 +84,7 @@ export default function CoupleSetupPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center p-4">
+    <div className="min-h-[calc(100dvh-160px)] flex items-center justify-center py-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">

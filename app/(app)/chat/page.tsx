@@ -131,7 +131,7 @@ export default function ChatPage() {
       {/* Sidebar for Sessions */}
       <div className={`
         fixed inset-0 z-50 bg-surface md:bg-transparent md:relative md:z-auto
-        w-full md:w-64 shrink-0 flex-col gap-4 p-4 md:p-0
+        w-full md:w-64 shrink-0 flex-col gap-4 p-4 pt-safe pb-safe md:p-0
         ${isSidebarOpen ? 'flex' : 'hidden md:flex'}
       `}>
         <div className="md:hidden flex justify-between items-center mb-4">
