@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User as UserIcon, Sparkles } from 'lucide-react';
+import { Send, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import ReactMarkdown from 'react-markdown';
 import type { AiChatMessage, Profile } from '@/types';
@@ -18,20 +18,30 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(sessionId);
+  const [error, setError] = useState<string | null>(null);
   
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when messages change
+  // Sync internal state when parent initialMessages or sessionId change
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages]);
+
+  useEffect(() => {
+    setCurrentSessionId(sessionId);
+  }, [sessionId]);
+
+  // Auto-scroll to bottom when messages change or typing state changes
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, error]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isTyping) return;
+  const handleSend = async (text: string) => {
+    const userText = text.trim();
+    if (!userText || isTyping) return;
 
-    const userText = input.trim();
     setInput('');
+    setError(null);
     
     // Optimistic UI update for user message
     const tempId = `temp-${Date.now()}`;
@@ -49,15 +59,23 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
     try {
       const newSessionId = await onSendMessage(userText, currentSessionId);
       if (!currentSessionId) setCurrentSessionId(newSessionId);
-      // We rely on a refetch from parent or optimistic update if parent passes new messages
-      // Wait, let's just let the parent manage state, but wait, parent just passes a promise.
-      // We should probably just refresh the page data. Let's trigger a router.refresh() in parent.
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      // Remove optimistic message on error
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    } catch (err: any) {
+      console.error('Failed to send message:', err);
+      setError(err?.message || 'Không thể nhận phản hồi từ Cupid lúc này. Vui lòng thử lại!');
     } finally {
       setIsTyping(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSend(input);
+  };
+
+  const retryLastMessage = () => {
+    const lastUserMsg = [...messages].reverse().find((m) => m.sender === 'user');
+    if (lastUserMsg) {
+      handleSend(lastUserMsg.content);
     }
   };
 
@@ -92,18 +110,13 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
                 "Quà tặng cho người yêu 🎁",
                 "Cách giải quyết xung đột 💬",
                 "Ý tưởng kỉ niệm đặc biệt 🎉"
-              ].map(suggestion => (
+              ].map((suggestion) => (
                 <button
+                  type="button"
                   key={suggestion}
-                  onClick={() => {
-                    setInput(suggestion);
-                    // We need to submit immediately
-                    setTimeout(() => {
-                      const form = document.getElementById('chat-form') as HTMLFormElement;
-                      if (form) form.requestSubmit();
-                    }, 0);
-                  }}
-                  className="px-4 py-2 text-sm text-left text-text-muted bg-surface-hover border border-border rounded-xl hover:bg-surface-hover/80 hover:text-text hover:border-primary/50 transition-colors"
+                  onClick={() => handleSend(suggestion)}
+                  disabled={isTyping}
+                  className="px-4 py-2.5 text-sm text-left text-text bg-surface-hover border border-border rounded-xl hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-colors disabled:opacity-50 cursor-pointer active:scale-[0.98]"
                 >
                   {suggestion}
                 </button>
@@ -159,6 +172,24 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
             </div>
           </div>
         )}
+
+        {/* Error notification banner with retry */}
+        {error && (
+          <div className="flex items-center justify-between gap-3 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-600 dark:text-red-400">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={retryLastMessage}
+              className="flex items-center gap-1 font-semibold hover:underline shrink-0 ml-2"
+            >
+              <RefreshCw className="w-3 h-3" /> Thử lại
+            </button>
+          </div>
+        )}
+
         <div ref={endOfMessagesRef} />
       </div>
 
@@ -181,7 +212,7 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
           <button
             type="submit"
             disabled={!input.trim() || isTyping}
-            className="absolute right-2 bottom-1.5 p-2 rounded-full bg-primary text-white hover:bg-primary-hover disabled:opacity-50 disabled:hover:bg-primary transition-colors flex shrink-0"
+            className="absolute right-2 bottom-1.5 p-2 rounded-full bg-primary text-white hover:bg-primary-hover disabled:opacity-50 disabled:hover:bg-primary transition-colors flex shrink-0 cursor-pointer"
           >
             <Send className="w-4 h-4" />
           </button>

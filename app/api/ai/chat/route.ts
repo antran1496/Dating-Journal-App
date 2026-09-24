@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Save AI response
-  const { data: aiMsg } = await supabase
+  const { data: aiMsg, error: aiMsgError } = await supabase
     .from('ai_chat_messages')
     .insert({
       session_id: currentSessionId,
@@ -119,10 +119,22 @@ export async function POST(request: NextRequest) {
     .select()
     .single();
 
+  if (aiMsgError) {
+    console.error('[POST /api/ai/chat] message insert error:', aiMsgError);
+  }
+
+  const responseMessage = aiMsg ?? {
+    id: `ai-${Date.now()}`,
+    session_id: currentSessionId,
+    sender: 'ai' as const,
+    content: aiResponse,
+    created_at: new Date().toISOString(),
+  };
+
   return NextResponse.json({
     data: {
       session_id: currentSessionId,
-      message: aiMsg,
+      message: responseMessage,
     },
   });
 }
