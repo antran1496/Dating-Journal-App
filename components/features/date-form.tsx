@@ -12,6 +12,9 @@ import { useForm } from "react-hook-form";
 import { MultiImageUpload } from "./multi-image-upload";
 import { RatingStars } from "./rating-stars";
 
+import { useToast } from "@/components/ui/toast";
+import { useLocale } from "@/components/providers/locale-provider";
+
 interface DateFormProps {
   defaultValues?: Partial<DateEntry>;
   onSubmit: (
@@ -30,6 +33,8 @@ export function DateForm({
   onCancel,
   isLoading,
 }: DateFormProps) {
+  const { toast } = useToast();
+  const { t } = useLocale();
   const [imageUrls, setImageUrls] = React.useState<string[]>(
     defaultValues?.checkin_image_urls ??
       (defaultValues?.checkin_image_url
@@ -63,11 +68,20 @@ export function DateForm({
   const rating = watch("rating");
 
   const handleFormSubmit = async (values: DateFormValues) => {
-    await onSubmit({
-      ...values,
-      checkin_image_urls: imageUrls,
-      checkin_image_url: imageUrls.length > 0 ? imageUrls[0] : undefined,
-    });
+    try {
+      await onSubmit({
+        ...values,
+        checkin_image_urls: imageUrls,
+        checkin_image_url: imageUrls.length > 0 ? imageUrls[0] : undefined,
+      });
+      toast({
+        type: 'success',
+        title: defaultValues?.id ? t('toast.dateUpdated') : t('toast.dateCreated'),
+      });
+    } catch (error) {
+      console.error(error);
+      toast({ type: 'error', title: t('toast.error') });
+    }
   };
 
   return (

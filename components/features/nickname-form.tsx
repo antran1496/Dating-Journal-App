@@ -12,6 +12,9 @@ import { Avatar } from '@/components/ui/avatar';
 import { nicknameFormSchema, type NicknameFormValues } from '@/types/forms';
 import type { Profile } from '@/types';
 
+import { useToast } from '@/components/ui/toast';
+import { useLocale } from '@/components/providers/locale-provider';
+
 interface NicknameFormProps {
   partner: Profile;
   currentNickname?: string | null;
@@ -24,6 +27,8 @@ export function NicknameForm({ partner, currentNickname, coupleId, onSuccess }: 
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const supabase = createClient();
+  const { toast } = useToast();
+  const { t } = useLocale();
 
   const { register, handleSubmit, formState: { errors } } = useForm<NicknameFormValues>({
     resolver: zodResolver(nicknameFormSchema),
@@ -46,11 +51,13 @@ export function NicknameForm({ partner, currentNickname, coupleId, onSuccess }: 
 
     if (updateError) {
       setError('Không thể lưu biệt danh, vui lòng thử lại');
+      toast({ type: 'error', title: t('toast.error') });
       setIsLoading(false);
       return;
     }
 
     queryClient.invalidateQueries({ queryKey: ['couple'] });
+    toast({ type: 'success', title: t('toast.nicknameSaved') });
     onSuccess?.(values.nickname);
     setIsLoading(false);
   };

@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { AiChat } from '@/components/features/ai-chat';
 import { createClient } from '@/lib/supabase/client';
 import type { AiChatMessage, Profile, AiChatSession } from '@/types';
-import { MessageSquare, Plus, Loader2, Menu, X } from 'lucide-react';
+import { MessageSquare, Plus, Loader2, Menu, X, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { useLocale } from '@/components/providers/locale-provider';
 
 export default function ChatPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -14,6 +16,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { t } = useLocale();
 
   const supabase = createClient();
 
@@ -145,7 +148,12 @@ export default function ChatPage() {
         
         <div className="flex-1 overflow-y-auto space-y-2 pb-20 md:pb-0">
           {sessions.length === 0 ? (
-            <p className="text-sm text-text-muted text-center mt-4">Chưa có lịch sử trò chuyện</p>
+            <EmptyState
+              icon={<MessageCircle size={24} />}
+              title={t('empty.noChatHistory')}
+              description={t('empty.noChatHistoryDesc')}
+              className="mt-4 p-4"
+            />
           ) : (
             sessions.map(session => (
               <button

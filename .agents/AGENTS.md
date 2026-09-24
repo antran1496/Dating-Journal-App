@@ -49,6 +49,7 @@ User có thể thay đổi theme runtime → tokens PHẢI hoạt động với 
 
 - Commit messages bằng tiếng Anh, conventional commits format.
 - Không commit secrets, `.env.local`, node_modules.
+- **LUÔN LUÔN tạo feature branch từ `main`**. Không bao giờ checkout branch mới từ feature branch khác. Quy trình: merge/push feature branch hiện tại → checkout `main` → pull latest → tạo branch mới từ `main`.
 
 ## 7. Tham khảo kế hoạch
 

@@ -23,11 +23,17 @@ import { Modal } from '@/components/ui/modal';
 import { DateCard } from '@/components/features/date-card';
 import type { DateEntry } from '@/types';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
+import { useLocale } from '@/components/providers/locale-provider';
+import { CalendarOff } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export function MonthlyCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { t } = useLocale();
+  const router = useRouter();
 
   const { couple, isLoading: isLoadingCouple } = useCouple();
   const { data: dates, isLoading: isLoadingDates } = useDates(couple?.id);
@@ -61,11 +67,9 @@ export function MonthlyCalendar() {
     });
   };
 
-  const handleDayClick = (day: Date, dayDates: DateEntry[]) => {
-    if (dayDates.length > 0) {
-      setSelectedDay(day);
-      setIsModalOpen(true);
-    }
+  const handleDayClick = (day: Date) => {
+    setSelectedDay(day);
+    setIsModalOpen(true);
   };
 
   return (
@@ -119,12 +123,11 @@ export function MonthlyCalendar() {
           return (
             <div
               key={day.toString()}
-              onClick={() => handleDayClick(day, dayDates)}
+              onClick={() => handleDayClick(day)}
               className={`
-                relative h-[50px] sm:h-[58px] md:h-24 p-0.5 sm:p-1 md:p-2 border rounded-[var(--radius-sm)] sm:rounded-[var(--radius-md)] transition-all flex items-center justify-center overflow-hidden select-none
+                relative h-[50px] sm:h-[58px] md:h-24 p-0.5 sm:p-1 md:p-2 border rounded-[var(--radius-sm)] sm:rounded-[var(--radius-md)] transition-all flex items-center justify-center overflow-hidden select-none cursor-pointer hover:border-primary/50 hover:bg-primary/10 hover:shadow-sm active:scale-95
                 ${isCurrentMonth ? 'bg-surface border-border' : 'bg-surface/30 border-transparent text-text-muted/30'}
                 ${isToday ? 'border-primary ring-1 ring-primary/25 bg-primary/5' : ''}
-                ${hasEvent ? 'cursor-pointer hover:border-primary/50 hover:bg-primary/10 hover:shadow-sm active:scale-95' : ''}
               `}
             >
               {/* Day Count from Anniversary (Top Right) */}
@@ -152,7 +155,6 @@ export function MonthlyCalendar() {
         })}
       </div>
 
-      {/* Detail Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -160,9 +162,23 @@ export function MonthlyCalendar() {
         size="lg"
       >
         <div className="space-y-4">
-          {selectedDay && getDatesForDay(selectedDay).map(date => (
-            <DateCard key={date.id} date={date} />
-          ))}
+          {selectedDay && getDatesForDay(selectedDay).length > 0 ? (
+            getDatesForDay(selectedDay).map(date => (
+              <DateCard key={date.id} date={date} />
+            ))
+          ) : (
+            <EmptyState
+              icon={<CalendarOff size={28} />}
+              title={t('empty.noCalendarEvents')}
+              description={t('empty.noCalendarEventsDesc')}
+              action={() => {
+                setIsModalOpen(false);
+                router.push('/dates/new');
+              }}
+              actionLabel={t('empty.addDate')}
+              className="py-8"
+            />
+          )}
         </div>
       </Modal>
     </div>
