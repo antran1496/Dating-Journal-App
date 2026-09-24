@@ -37,7 +37,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity p-4 pt-safe pb-safe">
       <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
       <div 
         className={`relative w-full ${sizeClasses[size]} rounded-[var(--radius-lg)] bg-surface shadow-[var(--shadow-elevated)] border border-border animate-in fade-in slide-in-from-bottom-4 duration-250 ease-out flex flex-col max-h-[90vh]`}

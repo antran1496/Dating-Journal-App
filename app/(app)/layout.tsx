@@ -31,7 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <LocaleProvider initialLocale={initialLocale}>
-      <div className="min-h-screen bg-bg text-text flex flex-col">
+      <div className="min-h-screen bg-bg text-text flex flex-col pt-safe md:pt-0">
         {/* Client component that applies initial preferences to ThemeProvider */}
         <ThemeApplier preferences={prefs} />
 

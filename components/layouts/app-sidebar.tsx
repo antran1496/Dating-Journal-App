@@ -27,7 +27,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
   return (
     <>
       {/* Desktop Top Navbar */}
-      <header className="hidden md:flex items-center justify-between border-b border-border bg-surface/50 backdrop-blur-xl px-6 py-3 sticky top-0 z-40">
+      <header className="hidden md:flex items-center justify-between border-b border-border bg-surface/50 backdrop-blur-xl px-6 py-3 sticky top-0 z-40 pt-safe">
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="Dating Journal Logo" className="h-8 w-auto object-contain" />
           <span className="font-heading font-bold text-xl tracking-tight text-text mr-8">Dating Journal</span>
