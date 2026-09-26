@@ -31,22 +31,22 @@ export function Avatar({ src, alt, name, size = 'md', status, className = '' }: 
     : '?';
 
   return (
-    <div className={`relative inline-block ${className}`}>
-      <div className={`relative flex items-center justify-center overflow-hidden rounded-[var(--radius-full)] bg-surface-hover border border-border ${sizes[size]}`}>
+    <div className={`relative inline-flex shrink-0 rounded-full ${className}`}>
+      <div className={`relative flex items-center justify-center overflow-hidden rounded-full aspect-square bg-surface-hover border border-border/50 shrink-0 ${sizes[size]}`}>
         {src && !imageError ? (
           <img
             src={src}
             alt={alt || name || 'Avatar'}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover rounded-full"
             onError={() => setImageError(true)}
           />
         ) : (
-          <span className="font-medium text-text-muted">{initials}</span>
+          <span className="font-medium text-text-muted select-none">{initials}</span>
         )}
       </div>
       {status && (
         <span 
-          className={`absolute bottom-0 right-0 rounded-[var(--radius-full)] border-2 border-surface ${statusSizes[size]} ${status === 'online' ? 'bg-[var(--color-success)]' : 'bg-gray-400'}`}
+          className={`absolute bottom-0 right-0 rounded-full border-2 border-surface ${statusSizes[size]} ${status === 'online' ? 'bg-[var(--color-success)]' : 'bg-gray-400'}`}
         />
       )}
     </div>

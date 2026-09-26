@@ -11,6 +11,42 @@ import { calculateLifePathNumber } from '@/lib/ai/prompts/numerology';
 import { getZodiacSign } from '@/lib/ai/prompts/zodiac';
 import { MAJOR_ARCANA } from '@/lib/ai/prompts/tarot';
 import type { AiReading, Profile } from '@/types';
+import { useToast } from '@/components/ui/toast';
+
+function resizeImage(file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.8): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function InsightsPage() {
   const [activeTab, setActiveTab] = useState<'numerology' | 'zodiac' | 'tarot' | 'palm'>('numerology');
@@ -24,6 +60,7 @@ export default function InsightsPage() {
   const [palmImage, setPalmImage] = useState<string | null>(null);
 
   const supabase = createClient();
+  const { toast } = useToast();
 
   useEffect(() => {
     async function loadData() {
@@ -31,24 +68,40 @@ export default function InsightsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get profile
+      // 1. Get current user's profile
       const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       setProfile(p as Profile);
 
-      // Get partner profile via couple_members
-      const { data: memberData } = await supabase
+      // 2. Get couple_id
+      const { data: myMember } = await supabase
         .from('couple_members')
-        .select('couple_id, couple:couples(couple_members(profile:profiles(*)))')
+        .select('couple_id')
         .eq('profile_id', user.id)
         .maybeSingle();
 
-      if (memberData?.couple) {
-        const couple = memberData.couple as any;
-        const partner = couple.couple_members.find((m: any) => m.profile?.id !== user.id);
-        if (partner) setPartnerProfile(partner.profile);
+      if (myMember?.couple_id) {
+        // 3. Find partner in the same couple
+        const { data: partnerMember } = await supabase
+          .from('couple_members')
+          .select('profile_id')
+          .eq('couple_id', myMember.couple_id)
+          .neq('profile_id', user.id)
+          .maybeSingle();
+
+        if (partnerMember?.profile_id) {
+          const { data: pProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', partnerMember.profile_id)
+            .maybeSingle();
+
+          if (pProfile) {
+            setPartnerProfile(pProfile as Profile);
+          }
+        }
       }
 
-      // Get all readings
+      // 4. Get all readings
       const { data: rData } = await supabase
         .from('ai_readings')
         .select('*')
@@ -69,6 +122,12 @@ export default function InsightsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, input_data: inputData }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Không thể tạo luận giải');
+      }
+
       const { data } = await res.json();
       if (data) {
         // Prepend to top
@@ -77,9 +136,11 @@ export default function InsightsPage() {
           const filtered = prev.filter((r) => r.id !== data.id);
           return [data, ...filtered];
         });
+        toast({ type: 'success', title: 'Đã tạo luận giải thành công! ✨' });
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toast({ type: 'error', title: e?.message || 'Không thể tạo luận giải. Vui lòng thử lại!' });
     } finally {
       setIsGenerating(false);
     }
@@ -112,14 +173,20 @@ export default function InsightsPage() {
     generateReading('tarot', { card_ids: cardIds });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPalmImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const resized = await resizeImage(file);
+        setPalmImage(resized);
+      } catch (err) {
+        console.error('Lỗi xử lý ảnh:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPalmImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -197,7 +264,7 @@ export default function InsightsPage() {
               ) : (
                 <div className="text-center space-y-3">
                   <p className="text-text-muted text-sm">Chưa có thông tin ngày sinh.</p>
-                  <Button variant="secondary" onClick={() => window.location.href = '/profile'}>Cập nhật Hồ sơ</Button>
+                  <Button variant="secondary" onClick={() => window.location.href = '/settings'}>Cập nhật Hồ sơ</Button>
                 </div>
               )}
             </CardBody>
@@ -232,10 +299,30 @@ export default function InsightsPage() {
               ) : !myZodiac ? (
                 <div className="text-center space-y-3">
                   <p className="text-text-muted text-sm">Bạn cần cập nhật ngày sinh của mình trước.</p>
-                  <Button variant="secondary" onClick={() => window.location.href = '/profile'}>Cập nhật Hồ sơ</Button>
+                  <Button variant="secondary" onClick={() => window.location.href = '/settings'}>Cập nhật Hồ sơ</Button>
+                </div>
+              ) : partnerProfile && !partnerProfile.birth_date ? (
+                <div className="w-full max-w-sm space-y-4">
+                  <div className="text-center mb-2">
+                    <p className="text-text font-medium text-sm">
+                      Người yêu của bạn ({partnerProfile.display_name || 'Người ấy'}) chưa cập nhật ngày sinh trong hồ sơ.
+                    </p>
+                    <p className="text-text-muted text-xs mt-1">
+                      Nhập ngày sinh của người ấy bên dưới để xem độ tương hợp:
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-text">Ngày sinh của {partnerProfile.display_name || 'người ấy'}</label>
+                    <input 
+                      type="date" 
+                      value={manualPartnerDate}
+                      onChange={(e) => setManualPartnerDate(e.target.value)}
+                      className="w-full h-10 px-3 bg-surface border border-border rounded-[var(--radius-md)] focus:outline-none focus:border-primary text-sm"
+                    />
+                  </div>
                 </div>
               ) : (
-                <div className="w-full max-w-xs space-y-4">
+                <div className="w-full max-w-sm space-y-4">
                   <div className="text-center mb-2">
                     <p className="text-text-muted text-sm">Người yêu của bạn chưa tham gia? Nhập nhanh thông tin của họ để xem độ tương hợp nhé.</p>
                   </div>
@@ -289,50 +376,60 @@ export default function InsightsPage() {
             </CardHeader>
             <CardBody className="flex flex-col items-center gap-6">
               <p className="text-text-muted text-sm text-center max-w-sm">
-                Vui lòng chụp hoặc tải lên một bức ảnh rõ nét lòng bàn tay của bạn để AI có thể phân tích đường chỉ tay.
+                Tải lên ảnh chụp rõ nét lòng bàn tay của bạn để AI phân tích chi tiết các đường chỉ tay.
               </p>
               
               {!palmImage ? (
-                <div className="flex gap-4">
-                  <Button onClick={() => document.getElementById('camera-input')?.click()} variant="primary">
-                    📷 Chụp ảnh
-                  </Button>
-                  <Button onClick={() => document.getElementById('gallery-input')?.click()} variant="secondary">
-                    📁 Chọn từ thư viện
+                <div className="flex flex-col items-center gap-3">
+                  <Button
+                    type="button"
+                    onClick={() => document.getElementById('palm-image-input')?.click()}
+                    variant="primary"
+                    className="gap-2"
+                  >
+                    ✋ Tải ảnh lòng bàn tay
                   </Button>
                   <input
-                    id="camera-input"
-                    type="file"
-                    accept="image/*"
-                    capture="user"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
-                  <input
-                    id="gallery-input"
+                    id="palm-image-input"
                     type="file"
                     accept="image/*"
                     className="hidden"
                     onChange={handleImageUpload}
                   />
+                  <p className="text-xs text-text-muted text-center max-w-xs">
+                    Có thể chụp ảnh trực tiếp bằng camera hoặc chọn ảnh từ thư viện
+                  </p>
+                </div>
+              ) : isGenerating ? (
+                <div className="py-8 flex flex-col items-center gap-4">
+                  <div className="w-48 h-48 relative rounded-[var(--radius-md)] overflow-hidden border-2 border-primary/50 animate-pulse">
+                    <img src={palmImage} alt="Palm" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-primary/20 flex flex-col items-center justify-center gap-2">
+                      <Sparkles className="w-8 h-8 text-primary animate-spin" />
+                    </div>
+                  </div>
+                  <p className="text-text font-medium text-sm animate-pulse">AI đang phân tích các đường chỉ tay...</p>
+                  <p className="text-text-muted text-xs">Quá trình này mất khoảng vài giây</p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-4">
                   <div className="w-48 h-48 relative rounded-[var(--radius-md)] overflow-hidden border border-border">
                     <img src={palmImage} alt="Palm" className="w-full h-full object-cover" />
                     <button 
+                      type="button"
                       onClick={() => setPalmImage(null)}
-                      className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-surface/80 rounded-full text-text hover:bg-surface"
+                      className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors cursor-pointer"
+                      title="Chọn ảnh khác"
                     >
                       ×
                     </button>
                   </div>
                   <Button 
-                    onClick={() => generateReading('palm', { image: palmImage })} 
+                    onClick={() => generateReading('palm', { image_base64: palmImage, image: palmImage, mime_type: 'image/jpeg' })} 
                     isLoading={isGenerating} 
                     variant="primary"
                   >
-                    Xem kết quả
+                    Xem kết quả luận giải ✨
                   </Button>
                 </div>
               )}

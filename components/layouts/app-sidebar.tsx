@@ -68,7 +68,8 @@ export function AppSidebar({ profile }: AppSidebarProps) {
       </header>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-surface/80 backdrop-blur-xl z-40 pb-safe">
+      {!pathname.startsWith('/couple/setup') && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-surface/80 backdrop-blur-xl z-40 pb-safe">
         <div className="flex justify-around p-2">
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -87,6 +88,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
           })}
         </div>
       </nav>
+      )}
     </>
   );
 }

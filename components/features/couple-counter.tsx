@@ -71,15 +71,15 @@ export function CoupleCounter() {
         {/* Avatars + Day count */}
         <div className="flex items-center gap-4 mb-6">
           {/* Partner avatars */}
-          <div className="flex -space-x-3">
+          <div className="flex items-center -space-x-3">
             {members.map((m) => (
-              <div key={m.profile_id} className="ring-2 ring-white/30 rounded-full">
-                <Avatar
-                  src={m.profile?.avatar_url ?? undefined}
-                  name={m.profile?.display_name ?? '?'}
-                  size="lg"
-                />
-              </div>
+              <Avatar
+                key={m.profile_id}
+                src={m.profile?.avatar_url ?? undefined}
+                name={m.profile?.display_name ?? '?'}
+                size="lg"
+                className="ring-2 ring-white/70 shadow-sm"
+              />
             ))}
           </div>
 

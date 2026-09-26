@@ -33,14 +33,14 @@ export default function EditDatePage() {
 
     const json = await res.json();
     if (!res.ok) {
-      setError(json.error ?? 'Không thể cập nhật');
+      const msg = json.error ?? 'Không thể cập nhật';
+      setError(msg);
       setIsSubmitting(false);
-      return;
+      throw new Error(msg);
     }
 
     queryClient.invalidateQueries({ queryKey: DATE_QUERY_KEYS.byId(id) });
-    router.push(`/dates/${id}`);
-    router.refresh();
+    window.location.href = `/dates/${id}`;
   };
 
   return (

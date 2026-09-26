@@ -136,7 +136,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="animate-[fadeIn_0.3s_ease-out] flex flex-col md:flex-row gap-3 md:gap-6 h-[calc(100dvh-13.5rem-env(safe-area-inset-bottom,0px))] md:h-[calc(100dvh-160px)] md:min-h-[500px]">
+    <div className="animate-[fadeIn_0.3s_ease-out] flex flex-col md:flex-row gap-3 md:gap-6 chat-container-layout">
       
       {/* Mobile Header Toggle */}
       <div className="md:hidden flex items-center justify-between bg-surface border border-border px-3 py-2 rounded-[var(--radius-md)] shrink-0">
@@ -192,7 +192,7 @@ export default function ChatPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col h-full">
         <AiChat 
           key={chatInstanceKey}
           initialMessages={messages}

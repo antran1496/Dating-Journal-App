@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { DateEntry } from "@/types";
 import { dateFormSchema, type DateFormValues } from "@/types/forms";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import React from "react";
 import { useForm } from "react-hook-form";
 import { MultiImageUpload } from "./multi-image-upload";
@@ -67,7 +67,11 @@ export function DateForm({
 
   const rating = watch("rating");
 
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
   const handleFormSubmit = async (values: DateFormValues) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       await onSubmit({
         ...values,
@@ -81,6 +85,7 @@ export function DateForm({
     } catch (error) {
       console.error(error);
       toast({ type: 'error', title: t('toast.error') });
+      setIsSubmitting(false);
     }
   };
 
@@ -105,20 +110,16 @@ export function DateForm({
       />
 
       {/* Thời gian */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           {...register("date_time")}
           type="date"
           label="🕐 Ngày bắt đầu"
-          icon={<Calendar size={16} />}
-          iconPosition="left"
         />
         <Input
           {...register("end_date")}
           type="date"
-          label="🏁 Ngày kết thúc (Tuỳ chọn)"
-          icon={<Calendar size={16} />}
-          iconPosition="left"
+          label="🏁 Ngày kết thúc (tuỳ chọn)"
         />
       </div>
 
@@ -172,7 +173,7 @@ export function DateForm({
           type="submit"
           variant="primary"
           className="flex-1"
-          isLoading={isLoading}
+          isLoading={isLoading || isSubmitting}
         >
           {defaultValues?.id ? "Lưu thay đổi" : "Thêm buổi hẹn 💕"}
         </Button>

@@ -59,12 +59,13 @@ export function MultiImageUpload({
       const { data, error: uploadError } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
       if (uploadError) {
         console.error('Upload Error:', uploadError);
-        setError('Tải ảnh thất bại');
+        setError(`Tải ảnh "${file.name}" thất bại: ${uploadError.message}`);
+        setUploadingCount((prev) => Math.max(0, prev - 1));
         continue;
       }
       const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
       newUrls.push(publicUrl);
-      setUploadingCount((prev) => prev - 1);
+      setUploadingCount((prev) => Math.max(0, prev - 1));
     }
 
     if (newUrls.length > 0) {
@@ -86,7 +87,7 @@ export function MultiImageUpload({
             <button
               type="button"
               onClick={() => handleRemove(i)}
-              className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+              className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-black/80"
             >
               <X size={14} />
             </button>
