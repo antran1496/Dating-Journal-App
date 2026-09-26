@@ -77,17 +77,31 @@ export async function POST(request: NextRequest) {
       system = prompts.system;
       userPrompt = prompts.user;
     } else if (type === 'palm') {
-      // Palm reading uses multimodal — image sent as base64
-      const imageBase64 = input_data.image_base64 as string;
-      const mimeType = (input_data.mime_type as string) || 'image/jpeg';
-      if (!imageBase64) return NextResponse.json({ error: 'Cần ảnh lòng bàn tay' }, { status: 400 });
+      // Palm reading uses multimodal — image sent as base64 or data URL
+      const rawImage = (input_data.image_base64 || input_data.image) as string;
+      let mimeType = (input_data.mime_type as string) || 'image/jpeg';
+      if (!rawImage) return NextResponse.json({ error: 'Cần ảnh lòng bàn tay' }, { status: 400 });
+
+      let imageBase64 = rawImage;
+      if (rawImage.startsWith('data:')) {
+        const commaIndex = rawImage.indexOf(',');
+        if (commaIndex !== -1) {
+          const header = rawImage.slice(0, commaIndex);
+          const mimeMatch = header.match(/data:([^;]+);/);
+          if (mimeMatch) {
+            mimeType = mimeMatch[1];
+          }
+          imageBase64 = rawImage.slice(commaIndex + 1);
+        }
+      }
+
       const { system } = getPalmReadingPrompt();
       let palmResult: string;
       try {
         palmResult = await generateWithImage(system, imageBase64, mimeType);
-      } catch (e) {
-        console.error('[POST /api/ai/reading] Palm AI error:', e);
-        return NextResponse.json({ error: 'Dịch vụ AI tạm thời không khả dụng' }, { status: 503 });
+      } catch (e: any) {
+        console.error('[POST /api/ai/reading] Palm AI error:', e?.status || e?.message || e);
+        return NextResponse.json({ error: 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại!' }, { status: 503 });
       }
       // Save to DB (without the huge base64 in input_data)
       const { data: palmReading, error: palmInsertError } = await supabase

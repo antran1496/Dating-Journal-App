@@ -32,7 +32,10 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup');
-  const isAppPage = request.nextUrl.pathname === '/dashboard' || request.nextUrl.pathname.startsWith('/(app)');
+  const appRoutes = ['/dashboard', '/dates', '/chat', '/insights', '/settings', '/couple'];
+  const isAppPage = appRoutes.some(
+    (route) => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(`${route}/`)
+  );
 
   if (isAppPage && !user) {
     const url = request.nextUrl.clone();

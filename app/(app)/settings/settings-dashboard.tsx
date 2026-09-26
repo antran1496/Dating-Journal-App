@@ -6,7 +6,6 @@ import type { Profile, CoupleWithMembers } from '@/types';
 import { ProfileClient } from './profile-settings';
 import ThemeSettingsClient from './theme-settings';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 import { useLocale } from '@/components/providers/locale-provider';
 
 interface SettingsDashboardProps {
@@ -18,14 +17,13 @@ interface SettingsDashboardProps {
 export function SettingsDashboard({ profile, couple, userId }: SettingsDashboardProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'theme'>('profile');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const router = useRouter();
   const supabase = createClient();
   const { t } = useLocale();
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     await supabase.auth.signOut();
-    router.push('/login');
+    window.location.href = '/login';
   };
 
   return (

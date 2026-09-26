@@ -40,12 +40,13 @@ export default function NewDatePage() {
 
     const json = await res.json();
     if (!res.ok) {
-      setError(json.error ?? 'Không thể tạo buổi hẹn');
-      return;
+      const msg = json.error ?? 'Không thể tạo buổi hẹn';
+      setError(msg);
+      throw new Error(msg);
     }
 
-    router.push('/dates');
-    router.refresh();
+    // Use hard navigation to ensure fresh data on the dates list
+    window.location.href = '/dates';
   };
 
   return (

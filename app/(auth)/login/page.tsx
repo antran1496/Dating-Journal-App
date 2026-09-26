@@ -2,46 +2,60 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { loginSchema, type LoginFormValues } from '@/types/forms';
 
-const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+function mapAuthError(message: string): string {
+  if (message.includes('Invalid login credentials')) {
+    return 'Email hoặc mật khẩu không chính xác';
+  }
+  if (message.includes('Email not confirmed')) {
+    return 'Vui lòng xác thực email trước khi đăng nhập';
+  }
+  if (message.includes('Too many requests') || message.includes('rate limit')) {
+    return 'Bạn đã thử quá nhiều lần. Vui lòng chờ ít phút rồi thử lại';
+  }
+  return message || 'Đăng nhập thất bại. Vui lòng thử lại';
+}
 
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginFormValues) => {
     setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    });
+    setIsLoading(true);
 
-    if (error) {
-      setError(error.message);
-      return;
+    try {
+      const supabase = createClient();
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (authError) {
+        setError(mapAuthError(authError.message));
+        setIsLoading(false);
+        return;
+      }
+
+      // Hard navigation ensures cookies are committed and server components re-render with fresh session on first attempt
+      window.location.href = '/dashboard';
+    } catch (err: any) {
+      setError(err?.message || 'Đăng nhập thất bại. Vui lòng thử lại');
+      setIsLoading(false);
     }
-
-    router.push('/dashboard');
-    router.refresh();
   };
 
   return (
@@ -60,7 +74,8 @@ export default function LoginPage() {
           <input
             {...register('email')}
             type="email"
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 focus:outline-none focus:ring-2 focus:ring-rose-500/50 dark:focus:ring-rose-400/50 transition-all"
+            disabled={isLoading}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 focus:outline-none focus:ring-2 focus:ring-rose-500/50 dark:focus:ring-rose-400/50 transition-all text-sm text-gray-900 dark:text-white disabled:opacity-50"
             placeholder="you@example.com"
           />
           {errors.email && (
@@ -70,12 +85,13 @@ export default function LoginPage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Password
+            Mật khẩu
           </label>
           <input
             {...register('password')}
             type="password"
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 focus:outline-none focus:ring-2 focus:ring-rose-500/50 dark:focus:ring-rose-400/50 transition-all"
+            disabled={isLoading}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 focus:outline-none focus:ring-2 focus:ring-rose-500/50 dark:focus:ring-rose-400/50 transition-all text-sm text-gray-900 dark:text-white disabled:opacity-50"
             placeholder="••••••••"
           />
           {errors.password && (
@@ -86,16 +102,23 @@ export default function LoginPage() {
 
       <button
         type="submit"
-        disabled={isSubmitting}
-        className="w-full py-3 px-4 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-medium rounded-xl shadow-lg shadow-rose-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0"
+        disabled={isLoading}
+        className="w-full py-3 px-4 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-medium rounded-xl shadow-lg shadow-rose-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0 cursor-pointer flex items-center justify-center gap-2"
       >
-        {isSubmitting ? 'Signing in...' : 'Sign In'}
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Đang đăng nhập...</span>
+          </>
+        ) : (
+          <span>Đăng nhập</span>
+        )}
       </button>
 
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-        Don't have an account?{' '}
+        Chưa có tài khoản?{' '}
         <Link href="/signup" className="text-rose-600 dark:text-rose-400 hover:underline font-medium">
-          Sign up
+          Đăng ký ngay
         </Link>
       </p>
     </form>

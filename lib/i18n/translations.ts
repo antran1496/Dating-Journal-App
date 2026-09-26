@@ -95,6 +95,21 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // Auth
     'auth.not_logged_in': 'Chưa đăng nhập',
+    'auth.login_title': 'Đăng nhập',
+    'auth.login_button': 'Đăng nhập',
+    'auth.logging_in': 'Đang đăng nhập...',
+    'auth.email_label': 'Email',
+    'auth.password_label': 'Mật khẩu',
+    'auth.no_account': 'Chưa có tài khoản?',
+    'auth.signup_link': 'Đăng ký ngay',
+    'auth.signup_title': 'Đăng ký tài khoản',
+    'auth.signup_button': 'Đăng ký',
+    'auth.signing_up': 'Đang tạo tài khoản...',
+    'auth.name_label': 'Tên của bạn',
+    'auth.confirm_password_label': 'Xác nhận mật khẩu',
+    'auth.has_account': 'Đã có tài khoản?',
+    'auth.signin_link': 'Đăng nhập',
+    'auth.subtitle': 'Nhật ký tình yêu riêng tư của hai bạn.',
 
     // Milestones
     'milestone.congratulations': '🎉 Chúc mừng!',
@@ -197,6 +212,21 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // Auth
     'auth.not_logged_in': 'Not logged in',
+    'auth.login_title': 'Sign In',
+    'auth.login_button': 'Sign In',
+    'auth.logging_in': 'Signing in...',
+    'auth.email_label': 'Email',
+    'auth.password_label': 'Password',
+    'auth.no_account': "Don't have an account?",
+    'auth.signup_link': 'Sign up',
+    'auth.signup_title': 'Create Account',
+    'auth.signup_button': 'Create Account',
+    'auth.signing_up': 'Creating account...',
+    'auth.name_label': 'Display Name',
+    'auth.confirm_password_label': 'Confirm Password',
+    'auth.has_account': 'Already have an account?',
+    'auth.signin_link': 'Sign in',
+    'auth.subtitle': 'Your private love story, beautifully documented.',
 
     // Milestones
     'milestone.congratulations': '🎉 Congratulations!',

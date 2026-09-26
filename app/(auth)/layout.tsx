@@ -15,7 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               Dating Journal
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Your private love story, beautifully documented.
+              Nhật ký tình yêu riêng tư của hai bạn.
             </p>
           </div>
           {children}

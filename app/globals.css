@@ -201,3 +201,16 @@ h1, h2, h3, h4, h5, h6 {
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
 }
+
+/* Chat container responsive height */
+.chat-container-layout {
+  height: calc(100dvh - 12.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  min-height: 360px;
+}
+
+@media (min-width: 768px) {
+  .chat-container-layout {
+    height: calc(100dvh - 160px);
+    min-height: 500px;
+  }
+}
