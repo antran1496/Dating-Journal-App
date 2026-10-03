@@ -39,27 +39,42 @@ export function NicknameForm({ partner, currentNickname, coupleId, onSuccess }: 
     setIsLoading(true);
     setError(null);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setError('Chưa đăng nhập'); setIsLoading(false); return; }
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData?.user) {
+        const msg = 'Chưa đăng nhập hoặc phiên làm việc đã hết hạn';
+        setError(msg);
+        toast({ type: 'error', title: msg });
+        return;
+      }
 
-    // Upsert vào couple_members nickname column
-    const { error: updateError } = await supabase
-      .from('couple_members')
-      .update({ nickname: values.nickname })
-      .eq('couple_id', coupleId)
-      .eq('profile_id', partner.id);
+      // Update couple_members nickname column and verify updated row
+      const { data, error: updateError } = await supabase
+        .from('couple_members')
+        .update({ nickname: values.nickname })
+        .eq('couple_id', coupleId)
+        .eq('profile_id', partner.id)
+        .select();
 
-    if (updateError) {
-      setError('Không thể lưu biệt danh, vui lòng thử lại');
-      toast({ type: 'error', title: t('toast.error') });
+      if (updateError || !data || data.length === 0) {
+        console.error('Update Nickname Error:', updateError);
+        const errorMsg = updateError?.message || 'Không thể lưu biệt danh (không có quyền hoặc không tìm thấy dữ liệu)';
+        setError(errorMsg);
+        toast({ type: 'error', title: errorMsg });
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['couple'] });
+      toast({ type: 'success', title: t('toast.nicknameSaved') });
+      onSuccess?.(values.nickname);
+    } catch (err: any) {
+      console.error('Submit Nickname Exception:', err);
+      const errMsg = err?.message || 'Đã xảy ra lỗi không xác định';
+      setError(errMsg);
+      toast({ type: 'error', title: errMsg });
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    queryClient.invalidateQueries({ queryKey: ['couple'] });
-    toast({ type: 'success', title: t('toast.nicknameSaved') });
-    onSuccess?.(values.nickname);
-    setIsLoading(false);
   };
 
   return (

@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { Camera, X, Upload } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/toast';
 
 interface ImageUploadProps {
   value?: string | null;
@@ -23,45 +24,66 @@ export function ImageUpload({
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+  const { toast } = useToast();
 
   const handleUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      setError('Chỉ hỗ trợ file ảnh');
+      const msg = 'Chỉ hỗ trợ file ảnh (PNG, JPG, WEBP,...)';
+      setError(msg);
+      toast({ type: 'error', title: msg });
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError('Ảnh không được vượt quá 5MB');
+      const msg = 'Kích thước ảnh không được vượt quá 5MB';
+      setError(msg);
+      toast({ type: 'error', title: msg });
       return;
     }
 
     setIsUploading(true);
     setError(null);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setError('Chưa đăng nhập');
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData?.user) {
+        const msg = 'Bạn cần đăng nhập để tải ảnh lên';
+        setError(msg);
+        toast({ type: 'error', title: msg });
+        return;
+      }
+
+      const user = authData.user;
+      const rawExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const ext = rawExt.match(/^[a-z0-9]+$/) ? rawExt : 'jpg';
+      // Bắt buộc prefix userId vào folder để vượt qua RLS policy kiểm tra (storage.foldername(name))[1]
+      const path = `${user.id}/${folder}/${Date.now()}.${ext}`;
+
+      const { data, error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(path, file, {
+          upsert: true,
+          contentType: file.type || 'image/jpeg',
+        });
+
+      if (uploadError) {
+        console.error('Upload Error:', uploadError);
+        const errMsg = `Tải ảnh thất bại: ${uploadError.message}`;
+        setError(errMsg);
+        toast({ type: 'error', title: errMsg });
+        return;
+      }
+
+      const targetPath = data?.path || path;
+      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(targetPath);
+      onChange(publicUrl);
+    } catch (err: any) {
+      console.error('Upload Exception:', err);
+      const errMsg = err?.message || 'Đã xảy ra lỗi khi tải ảnh lên. Vui lòng thử lại!';
+      setError(errMsg);
+      toast({ type: 'error', title: errMsg });
+    } finally {
       setIsUploading(false);
-      return;
     }
-
-    const ext = file.name.split('.').pop();
-    // Bắt buộc prefix userId vào folder để vượt qua RLS policy kiểm tra (storage.foldername(name))[1]
-    const path = `${user.id}/${folder}/${Date.now()}.${ext}`;
-
-    const { data, error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(path, file, { upsert: true });
-
-    if (uploadError) {
-      console.error('Upload Error:', uploadError);
-      setError('Tải ảnh thất bại, vui lòng thử lại');
-      setIsUploading(false);
-      return;
-    }
-
-    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
-    onChange(publicUrl);
-    setIsUploading(false);
   };
 
   const handleRemove = async () => {
