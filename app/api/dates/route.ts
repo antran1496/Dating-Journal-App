@@ -2,15 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
+// Transform empty strings to undefined so Postgres doesn't receive "" for timestamp columns
+const emptyToUndefined = z.string().optional().transform((v) => (v === '' ? undefined : v));
+
 const createDateSchema = z.object({
   couple_id: z.string().uuid(),
   location_name: z.string().min(1, 'Vui lòng nhập địa điểm'),
-  date_time: z.string().optional(),
-  pros: z.string().optional(),
-  cons: z.string().optional(),
-  wish_next_time: z.string().optional(),
-  rating: z.coerce.number().min(1).max(5).optional(),
-  checkin_image_url: z.string().optional(),
+  date_time: emptyToUndefined,
+  end_date: emptyToUndefined,
+  pros: emptyToUndefined,
+  cons: emptyToUndefined,
+  wish_next_time: emptyToUndefined,
+  rating: z.coerce.number().min(1).max(5).optional().nullable(),
+  checkin_image_url: emptyToUndefined,
   checkin_image_urls: z.array(z.string()).max(9).optional(),
 });
 
@@ -31,7 +35,10 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('[GET /api/dates]', error);
-    return NextResponse.json({ error: 'Không thể tải dữ liệu' }, { status: 500 });
+    return NextResponse.json(
+      { error: `Không thể tải dữ liệu: ${error.message}`, code: error.code, details: error.details },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ data });
@@ -52,15 +59,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Dữ liệu không hợp lệ', details: parsed.error.flatten() }, { status: 400 });
   }
 
+  // Remove undefined keys so Supabase uses column defaults
+  const insertPayload = Object.fromEntries(
+    Object.entries({ ...parsed.data, created_by: user.id }).filter(([, v]) => v !== undefined),
+  );
+
   const { data, error } = await supabase
     .from('dates')
-    .insert({ ...parsed.data, created_by: user.id })
+    .insert(insertPayload)
     .select()
     .single();
 
   if (error) {
     console.error('[POST /api/dates]', error);
-    return NextResponse.json({ error: 'Không thể tạo buổi hẹn' }, { status: 500 });
+    return NextResponse.json(
+      { error: `Không thể tạo buổi hẹn: ${error.message}`, code: error.code, details: error.details },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ data }, { status: 201 });

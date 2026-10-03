@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
   if (memberError) {
     console.error('[POST /api/couples] member insert error', memberError);
-    return NextResponse.json({ error: 'Không thể thêm thành viên' }, { status: 500 });
+    return NextResponse.json({ error: 'Không thể thêm thành viên: ' + memberError.message }, { status: 500 });
   }
 
   return NextResponse.json({ data: couple }, { status: 201 });

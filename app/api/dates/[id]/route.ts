@@ -24,7 +24,7 @@ export async function GET(
 
   const { data, error } = await supabase.from('dates').select('*').eq('id', id).single();
   if (error?.code === 'PGRST116') return NextResponse.json({ error: 'Không tìm thấy' }, { status: 404 });
-  if (error) return NextResponse.json({ error: 'Lỗi server' }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Lỗi server: ${error.message}`, code: error.code }, { status: 500 });
 
   return NextResponse.json({ data });
 }
@@ -51,7 +51,7 @@ export async function PATCH(
   const { data, error } = await supabase
     .from('dates').update(parsed.data).eq('id', id).select().single();
 
-  if (error) return NextResponse.json({ error: 'Không thể cập nhật' }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Không thể cập nhật: ${error.message}`, code: error.code }, { status: 500 });
   return NextResponse.json({ data });
 }
 
@@ -65,7 +65,7 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
 
   const { error } = await supabase.from('dates').delete().eq('id', id);
-  if (error) return NextResponse.json({ error: 'Không thể xóa' }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Không thể xóa: ${error.message}`, code: error.code }, { status: 500 });
 
   return new NextResponse(null, { status: 204 });
 }

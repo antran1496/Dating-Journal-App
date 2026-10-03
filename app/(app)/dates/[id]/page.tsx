@@ -1,10 +1,11 @@
-import React from 'react';
-import { notFound, redirect } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, MapPin, Calendar, Edit3 } from 'lucide-react';
+import { DeleteDateButton } from '@/components/features/delete-date-button';
 import { createClient } from '@/lib/supabase/server';
 import type { DateEntry } from '@/types';
-import { DeleteDateButton } from '@/components/features/delete-date-button';
+import { Calendar, Edit3 } from 'lucide-react';
+import Link from 'next/link';
+import { notFound, redirect } from 'next/navigation';
+
+import { BackButton } from '@/components/ui/back-button';
 
 export default async function DateDetailPage(props: PageProps<'/dates/[id]'>) {
   const { id } = await props.params;
@@ -39,9 +40,7 @@ export default async function DateDetailPage(props: PageProps<'/dates/[id]'>) {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <Link href="/dates" className="flex items-center gap-2 text-text-muted hover:text-text transition-colors text-sm">
-          <ArrowLeft size={18} /> Quay lại
-        </Link>
+        <BackButton fallback="/dates" />
         <div className="flex items-center gap-2">
           <DeleteDateButton id={entry.id} coupleId={entry.couple_id} />
           <Link

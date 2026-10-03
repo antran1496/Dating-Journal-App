@@ -1,37 +1,45 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isSameMonth,
-  isSameDay,
-  addMonths,
-  subMonths,
-  differenceInCalendarDays,
-  isAfter,
-} from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { useLocale } from '@/components/providers/locale-provider';
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { useCouple } from '@/hooks/use-couple';
 import { useDates } from '@/hooks/use-dates';
-import { Modal } from '@/components/ui/modal';
-import { DateCard } from '@/components/features/date-card';
 import type { DateEntry } from '@/types';
-import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
-import { useLocale } from '@/components/providers/locale-provider';
-import { CalendarOff } from 'lucide-react';
+import {
+  addMonths,
+  differenceInCalendarDays,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isAfter,
+  isSameDay,
+  isSameMonth,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+
+function parseLocalDate(dateInput: string | Date): Date {
+  if (dateInput instanceof Date) return startOfDay(dateInput);
+  const dateStr = String(dateInput).split('T')[0];
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    return new Date(year, month, day);
+  }
+  return startOfDay(new Date(dateInput));
+}
 
 export function MonthlyCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const { t } = useLocale();
   const router = useRouter();
 
@@ -42,7 +50,7 @@ export function MonthlyCalendar() {
     return <LoadingSkeleton variant="rect" height="400px" className="rounded-[var(--radius-lg)]" />;
   }
 
-  const anniversaryDate = couple?.anniversary_date ? new Date(couple.anniversary_date) : null;
+  const anniversaryDate = couple?.anniversary_date ? parseLocalDate(couple.anniversary_date) : null;
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -68,8 +76,13 @@ export function MonthlyCalendar() {
   };
 
   const handleDayClick = (day: Date) => {
-    setSelectedDay(day);
-    setIsModalOpen(true);
+    const dayDates = getDatesForDay(day);
+    if (dayDates.length > 0) {
+      router.push(`/dates/${dayDates[0].id}`);
+    } else {
+      const formattedDateStr = format(day, 'yyyy-MM-dd');
+      router.push(`/dates/new?date=${formattedDateStr}`);
+    }
   };
 
   return (
@@ -154,33 +167,6 @@ export function MonthlyCalendar() {
           );
         })}
       </div>
-
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={`Kỷ niệm ngày ${selectedDay ? format(selectedDay, 'dd/MM/yyyy') : ''}`}
-        size="lg"
-      >
-        <div className="space-y-4">
-          {selectedDay && getDatesForDay(selectedDay).length > 0 ? (
-            getDatesForDay(selectedDay).map(date => (
-              <DateCard key={date.id} date={date} />
-            ))
-          ) : (
-            <EmptyState
-              icon={<CalendarOff size={28} />}
-              title={t('empty.noCalendarEvents')}
-              description={t('empty.noCalendarEventsDesc')}
-              action={() => {
-                setIsModalOpen(false);
-                router.push('/dates/new');
-              }}
-              actionLabel={t('empty.addDate')}
-              className="py-8"
-            />
-          )}
-        </div>
-      </Modal>
     </div>
   );
 }

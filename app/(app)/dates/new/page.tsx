@@ -1,16 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
 import { DateForm } from '@/components/features/date-form';
+import { BackButton } from '@/components/ui/back-button';
+import { createClient } from '@/lib/supabase/client';
 import type { DateFormValues } from '@/types/forms';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 
-export default function NewDatePage() {
+function NewDateContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const defaultDateParam = searchParams.get('date');
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
@@ -52,9 +53,7 @@ export default function NewDatePage() {
   return (
     <div className="max-w-xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/dates" className="p-2 rounded-[var(--radius-md)] hover:bg-surface-hover transition-colors text-text-muted hover:text-text">
-          <ArrowLeft size={20} />
-        </Link>
+        <BackButton fallback="/dates" className="p-2 rounded-[var(--radius-md)] hover:bg-surface-hover" />
         <div>
           <h1 className="font-heading text-xl font-bold text-text">Ghi buổi hẹn mới 💕</h1>
           <p className="text-text-muted text-sm">Lưu lại kỷ niệm của bạn</p>
@@ -68,8 +67,20 @@ export default function NewDatePage() {
       )}
 
       <div className="bg-surface rounded-[var(--radius-lg)] border border-border p-6">
-        <DateForm onSubmit={handleSubmit} onCancel={() => router.back()} />
+        <DateForm
+          defaultValues={defaultDateParam ? { date_time: defaultDateParam } : undefined}
+          onSubmit={handleSubmit}
+          onCancel={() => router.back()}
+        />
       </div>
     </div>
+  );
+}
+
+export default function NewDatePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-text-muted">Đang tải...</div>}>
+      <NewDateContent />
+    </Suspense>
   );
 }
