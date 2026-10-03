@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Gift, X } from 'lucide-react';
 import { useCouple } from '@/hooks/use-couple';
 import { useLocale } from '@/components/providers/locale-provider';
@@ -9,19 +9,24 @@ export function MilestoneBanner() {
   const { upcomingAlerts, isLoading } = useCouple();
   const { t } = useLocale();
   const [isVisible, setIsVisible] = useState(false);
-  const [closestMilestone, setClosestMilestone] = useState(upcomingAlerts?.[0] || null);
+  const [closestMilestone, setClosestMilestone] = useState<typeof upcomingAlerts[number] | null>(null);
+  const prevLabelRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && upcomingAlerts && upcomingAlerts.length > 0) {
-      const milestone = upcomingAlerts[0]; // closest one
-      setClosestMilestone(milestone);
+    if (isLoading || !upcomingAlerts || upcomingAlerts.length === 0) return;
+
+    const milestone = upcomingAlerts[0];
+    // Only update if the milestone label actually changed to avoid infinite loop
+    if (prevLabelRef.current === milestone.label) return;
+    prevLabelRef.current = milestone.label;
+
+    setClosestMilestone(milestone);
       
-      const storageKey = `milestone_banner_dismissed_${milestone.label}_${new Date(milestone.date).toISOString().split('T')[0]}`;
-      const isDismissed = localStorage.getItem(storageKey);
+    const storageKey = `milestone_banner_dismissed_${milestone.label}_${new Date(milestone.date).toISOString().split('T')[0]}`;
+    const isDismissed = localStorage.getItem(storageKey);
       
-      if (!isDismissed) {
-        setIsVisible(true);
-      }
+    if (!isDismissed) {
+      setIsVisible(true);
     }
   }, [isLoading, upcomingAlerts]);
 

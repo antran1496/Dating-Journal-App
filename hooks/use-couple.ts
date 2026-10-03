@@ -15,19 +15,33 @@ export type Milestone = {
   daysUntil: number;
 };
 
+function parseLocalDate(dateInput: string | Date): Date {
+  if (dateInput instanceof Date) return startOfDay(dateInput);
+  const dateStr = String(dateInput).split('T')[0];
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    return new Date(year, month, day);
+  }
+  return startOfDay(new Date(dateInput));
+}
+
 function getNextMilestones(anniversaryDate: Date): Milestone[] {
   const today = startOfDay(new Date());
   const milestones: Milestone[] = [];
 
-  // Thêm mốc theo ngày
+  // Thêm mốc theo ngày (Mốc N ngày là ngày thứ N kỉ niệm)
   const dayMilestones = [100, 200, 300, 365, 500, 700, 730, 1000];
   for (const days of dayMilestones) {
-    const date = startOfDay(addDays(anniversaryDate, days));
-    if (date >= today) {
+    const date = startOfDay(addDays(anniversaryDate, days - 1));
+    const daysUntil = differenceInCalendarDays(date, today);
+    if (daysUntil >= 0) {
       milestones.push({
         label: `${days} ngày`,
         date,
-        daysUntil: differenceInCalendarDays(date, today),
+        daysUntil,
       });
     }
   }
@@ -35,11 +49,12 @@ function getNextMilestones(anniversaryDate: Date): Milestone[] {
   // Thêm mốc kỷ niệm năm
   for (let year = 1; year <= 10; year++) {
     const date = startOfDay(addYears(anniversaryDate, year));
-    if (date >= today) {
+    const daysUntil = differenceInCalendarDays(date, today);
+    if (daysUntil >= 0) {
       milestones.push({
         label: `${year} năm`,
         date,
-        daysUntil: differenceInCalendarDays(date, today),
+        daysUntil,
       });
     }
   }
@@ -103,8 +118,9 @@ export function useCouple() {
   });
 
   const couple = query.data;
-  const anniversaryDate = couple?.anniversary_date ? new Date(couple.anniversary_date) : null;
-  const daysCount = anniversaryDate ? differenceInCalendarDays(new Date(), anniversaryDate) + 1 : null;
+  const today = startOfDay(new Date());
+  const anniversaryDate = couple?.anniversary_date ? parseLocalDate(couple.anniversary_date) : null;
+  const daysCount = anniversaryDate ? differenceInCalendarDays(today, anniversaryDate) + 1 : null;
   const nextMilestones = anniversaryDate ? getNextMilestones(anniversaryDate) : [];
   const todayMilestone = getTodayMilestone(nextMilestones);
   const upcomingAlerts = getUpcomingMilestones(nextMilestones, 7);

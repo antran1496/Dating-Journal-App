@@ -14,7 +14,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
 
   const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-  if (error) return NextResponse.json({ error: 'Không thể tải profile' }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Không thể tải profile: ${error.message}`, code: error.code }, { status: 500 });
 
   return NextResponse.json({ data });
 }
@@ -37,6 +37,6 @@ export async function PATCH(request: NextRequest) {
   const { data, error } = await supabase
     .from('profiles').update(parsed.data).eq('id', user.id).select().single();
 
-  if (error) return NextResponse.json({ error: 'Không thể cập nhật profile' }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Không thể cập nhật profile: ${error.message}`, code: error.code }, { status: 500 });
   return NextResponse.json({ data });
 }
