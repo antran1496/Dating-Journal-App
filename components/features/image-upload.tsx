@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Camera, X, Upload } from 'lucide-react';
+import { Camera, X, Upload, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
 
@@ -21,10 +21,13 @@ export function ImageUpload({
   className = '',
 }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const { toast } = useToast();
+
+  const displayUrl = localPreview || value;
 
   const handleUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -43,12 +46,17 @@ export function ImageUpload({
     setIsUploading(true);
     setError(null);
 
+    // Create local object URL for instant UI feedback
+    const tempUrl = URL.createObjectURL(file);
+    setLocalPreview(tempUrl);
+
     try {
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError || !authData?.user) {
         const msg = 'Bạn cần đăng nhập để tải ảnh lên';
         setError(msg);
         toast({ type: 'error', title: msg });
+        setLocalPreview(null);
         return;
       }
 
@@ -70,24 +78,28 @@ export function ImageUpload({
         const errMsg = `Tải ảnh thất bại: ${uploadError.message}`;
         setError(errMsg);
         toast({ type: 'error', title: errMsg });
+        setLocalPreview(null);
         return;
       }
 
       const targetPath = data?.path || path;
       const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(targetPath);
       onChange(publicUrl);
+      setLocalPreview(null);
+      toast({ type: 'success', title: 'Tải ảnh lên thành công! ✨' });
     } catch (err: any) {
       console.error('Upload Exception:', err);
       const errMsg = err?.message || 'Đã xảy ra lỗi khi tải ảnh lên. Vui lòng thử lại!';
       setError(errMsg);
       toast({ type: 'error', title: errMsg });
+      setLocalPreview(null);
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleRemove = async () => {
-    if (!value) return;
+    setLocalPreview(null);
     onChange(null);
   };
 
@@ -95,43 +107,56 @@ export function ImageUpload({
     <div className={`space-y-2 ${className}`}>
       <div
         className={`relative rounded-[var(--radius-lg)] border-2 border-dashed transition-all duration-200 overflow-hidden ${
-          value ? 'border-border' : 'border-border hover:border-primary/50'
+          displayUrl ? 'border-border' : 'border-border hover:border-primary/50'
         }`}
         style={{ minHeight: '160px' }}
       >
-        {value ? (
+        {displayUrl ? (
           <>
             <img
-              src={value}
+              src={displayUrl}
               alt="Check-in"
               className="w-full h-full object-cover"
               style={{ minHeight: '160px', maxHeight: '280px' }}
             />
-            <button
-              type="button"
-              onClick={handleRemove}
-              className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-            >
-              <X size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className="absolute bottom-2 right-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 text-white text-xs hover:bg-black/70 transition-colors"
-            >
-              <Camera size={14} />
-              Thay ảnh
-            </button>
+            {isUploading && (
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 text-white z-10 animate-fadeIn">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <span className="text-xs font-medium">Đang tải ảnh lên...</span>
+              </div>
+            )}
+            {!isUploading && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors z-20 cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="absolute bottom-2 right-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 text-white text-xs hover:bg-black/70 transition-colors z-20 cursor-pointer"
+                >
+                  <Camera size={14} />
+                  Thay ảnh
+                </button>
+              </>
+            )}
           </>
         ) : (
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={isUploading}
-            className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-text-muted hover:text-primary transition-colors"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-text-muted hover:text-primary transition-colors cursor-pointer"
           >
             {isUploading ? (
-              <div className="animate-spin rounded-full border-2 border-primary border-t-transparent w-8 h-8" />
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <span className="text-xs font-medium text-primary">Đang tải ảnh lên...</span>
+              </div>
             ) : (
               <>
                 <Upload size={32} className="opacity-50" />
@@ -143,7 +168,7 @@ export function ImageUpload({
         )}
       </div>
 
-      {error && <p className="text-xs text-[var(--color-error)]">{error}</p>}
+      {error && <p className="text-xs text-[var(--color-error)] font-medium">{error}</p>}
 
       <input
         ref={inputRef}

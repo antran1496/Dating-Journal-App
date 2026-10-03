@@ -179,11 +179,13 @@ export default function InsightsPage() {
       try {
         const resized = await resizeImage(file);
         setPalmImage(resized);
+        toast({ type: 'success', title: 'Đã tải ảnh lòng bàn tay thành công! 🖐️' });
       } catch (err) {
         console.error('Lỗi xử lý ảnh:', err);
         const reader = new FileReader();
         reader.onloadend = () => {
           setPalmImage(reader.result as string);
+          toast({ type: 'success', title: 'Đã tải ảnh lòng bàn tay thành công! 🖐️' });
         };
         reader.readAsDataURL(file);
       }

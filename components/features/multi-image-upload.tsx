@@ -74,6 +74,7 @@ export function MultiImageUpload({
       }
 
       setUploadingCount(toUpload.length);
+      toast({ type: 'info', title: `Đang tải ${toUpload.length} ảnh lên...` });
 
       const newUrls: string[] = [];
       for (const file of toUpload) {
@@ -105,6 +106,7 @@ export function MultiImageUpload({
 
       if (newUrls.length > 0) {
         onChange([...value, ...newUrls]);
+        toast({ type: 'success', title: `Đã tải ${newUrls.length} ảnh lên thành công! ✨` });
       }
     } catch (err: any) {
       console.error('Batch Upload Exception:', err);
@@ -129,7 +131,7 @@ export function MultiImageUpload({
             <button
               type="button"
               onClick={() => handleRemove(i)}
-              className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-black/80"
+              className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-black/80 cursor-pointer"
             >
               <X size={14} />
             </button>
@@ -140,8 +142,9 @@ export function MultiImageUpload({
         ))}
 
         {uploadingCount > 0 && Array.from({ length: uploadingCount }).map((_, i) => (
-          <div key={`uploading-${i}`} className="aspect-square rounded-[var(--radius-md)] border-2 border-dashed border-primary/30 flex items-center justify-center bg-primary/5">
-            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+          <div key={`uploading-${i}`} className="aspect-square rounded-[var(--radius-md)] border-2 border-dashed border-primary/40 flex flex-col items-center justify-center gap-1 bg-primary/5 text-primary">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span className="text-[10px] font-medium animate-pulse">Đang tải...</span>
           </div>
         ))}
 
@@ -160,7 +163,7 @@ export function MultiImageUpload({
       </div>
 
       <p className="text-xs text-text-muted">Tối đa {maxImages} ảnh, mỗi ảnh ≤ {maxSizeMB}MB</p>
-      {error && <p className="text-xs text-[var(--color-error)]">{error}</p>}
+      {error && <p className="text-xs text-[var(--color-error)] font-medium">{error}</p>}
 
       <input
         ref={inputRef}
