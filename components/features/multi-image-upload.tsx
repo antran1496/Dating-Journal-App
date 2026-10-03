@@ -2,8 +2,8 @@
 
 import React, { useRef, useState } from 'react';
 import { Camera, X, Upload, Plus, Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
+import { uploadImage } from '@/lib/image/upload-image';
 
 interface MultiImageUploadProps {
   value: string[];
@@ -19,7 +19,7 @@ export function MultiImageUpload({
   value = [],
   onChange,
   maxImages = 9,
-  maxSizeMB = 5,
+  maxSizeMB = 20, // Increase max size since we are compressing
   bucket = 'checkin-images',
   folder = 'checkin',
   className = '',
@@ -27,7 +27,6 @@ export function MultiImageUpload({
   const [uploadingCount, setUploadingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
   const { toast } = useToast();
 
   const remaining = maxImages - value.length;
@@ -36,72 +35,47 @@ export function MultiImageUpload({
     if (!files || files.length === 0) return;
     setError(null);
 
+    const validFiles: File[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) {
+        const msg = `File "${file.name}" không phải là ảnh hợp lệ`;
+        setError(msg);
+        toast({ type: 'error', title: msg });
+        continue;
+      }
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        const msg = `Ảnh "${file.name}" vượt quá kích thước ${maxSizeMB}MB`;
+        setError(msg);
+        toast({ type: 'error', title: msg });
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (validFiles.length === 0) return;
+
+    const slotsLeft = maxImages - value.length;
+    const toUpload = validFiles.slice(0, slotsLeft);
+    if (validFiles.length > slotsLeft) {
+      const msg = `Chỉ còn ${slotsLeft} chỗ trống, đã bỏ qua ${validFiles.length - slotsLeft} ảnh`;
+      setError(msg);
+      toast({ type: 'error', title: msg });
+    }
+
+    setUploadingCount(toUpload.length);
+
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      if (authError || !authData?.user) {
-        const msg = 'Bạn cần đăng nhập để tải ảnh lên';
-        setError(msg);
-        toast({ type: 'error', title: msg });
-        return;
-      }
-      const user = authData.user;
-
-      const validFiles: File[] = [];
-      for (const file of Array.from(files)) {
-        if (!file.type.startsWith('image/')) {
-          const msg = `File "${file.name}" không phải là ảnh hợp lệ`;
-          setError(msg);
-          toast({ type: 'error', title: msg });
-          continue;
-        }
-        if (file.size > maxSizeMB * 1024 * 1024) {
-          const msg = `Ảnh "${file.name}" vượt quá kích thước ${maxSizeMB}MB`;
-          setError(msg);
-          toast({ type: 'error', title: msg });
-          continue;
-        }
-        validFiles.push(file);
-      }
-
-      if (validFiles.length === 0) return;
-
-      const slotsLeft = maxImages - value.length;
-      const toUpload = validFiles.slice(0, slotsLeft);
-      if (validFiles.length > slotsLeft) {
-        const msg = `Chỉ còn ${slotsLeft} chỗ trống, đã bỏ qua ${validFiles.length - slotsLeft} ảnh`;
-        setError(msg);
-        toast({ type: 'error', title: msg });
-      }
-
-      setUploadingCount(toUpload.length);
-
-      const newUrls: string[] = [];
-      for (const file of toUpload) {
-        const rawExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-        const ext = rawExt.match(/^[a-z0-9]+$/) ? rawExt : 'jpg';
-        const path = `${user.id}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
-
-        const { data, error: uploadError } = await supabase.storage
-          .from(bucket)
-          .upload(path, file, {
-            upsert: true,
-            contentType: file.type || 'image/jpeg',
-          });
-
-        if (uploadError) {
-          console.error('Upload Error:', uploadError);
-          const errMsg = `Tải ảnh "${file.name}" thất bại: ${uploadError.message}`;
+      const uploadPromises = toUpload.map((file) => 
+        uploadImage(file, { bucket, folder }).catch((err) => {
+          const errMsg = `Tải ảnh "${file.name}" thất bại: ${err.message}`;
           setError(errMsg);
           toast({ type: 'error', title: errMsg });
-          setUploadingCount((prev) => Math.max(0, prev - 1));
-          continue;
-        }
+          return null; // Return null on failure to filter later
+        })
+      );
 
-        const targetPath = data?.path || path;
-        const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(targetPath);
-        newUrls.push(publicUrl);
-        setUploadingCount((prev) => Math.max(0, prev - 1));
-      }
+      const results = await Promise.all(uploadPromises);
+      const newUrls = results.filter((url): url is string => url !== null);
 
       if (newUrls.length > 0) {
         onChange([...value, ...newUrls]);

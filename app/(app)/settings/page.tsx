@@ -1,5 +1,6 @@
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/supabase/auth';
 import { redirect } from 'next/navigation';
 import { SettingsDashboard } from './settings-dashboard';
 import type { Profile, CoupleWithMembers } from '@/types';
@@ -9,9 +10,10 @@ export const metadata = {
 };
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect('/login');
+  
+  const supabase = await createClient();
 
   const { data: profile } = await supabase
     .from('profiles')

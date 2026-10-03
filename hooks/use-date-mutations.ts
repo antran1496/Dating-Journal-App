@@ -6,13 +6,15 @@ import { DATE_QUERY_KEYS } from './use-dates';
 import type { DateEntry } from '@/types';
 import type { DateFormValues } from '@/types/forms';
 
+import { useSessionUser } from '@/components/providers/session-provider';
+
 export function useCreateDate(coupleId: string) {
   const queryClient = useQueryClient();
   const supabase = createClient();
+  const { user } = useSessionUser();
 
   return useMutation({
     mutationFn: async (input: DateFormValues & { checkin_image_url?: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Chưa đăng nhập');
 
       const { data, error } = await supabase

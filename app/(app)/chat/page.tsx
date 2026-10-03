@@ -8,6 +8,7 @@ import { MessageSquare, Plus, Loader2, Menu, X, MessageCircle } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLocale } from '@/components/providers/locale-provider';
+import { useSessionUser } from '@/components/providers/session-provider';
 
 export default function ChatPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -18,13 +19,13 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { t } = useLocale();
+  const { user } = useSessionUser();
 
   const supabase = createClient();
 
   useEffect(() => {
     async function loadInitialData() {
       setIsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -93,7 +94,6 @@ export default function ChatPage() {
     if (!sessionId && data?.session_id) {
       setCurrentSessionId(data.session_id);
       // Fetch sessions again to update sidebar
-      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: member } = await supabase.from('couple_members').select('couple_id').eq('profile_id', user.id).maybeSingle();
         if (member?.couple_id) {

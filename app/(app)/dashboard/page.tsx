@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/supabase/auth';
 import { redirect } from 'next/navigation';
 import { CoupleCounter } from '@/components/features/couple-counter';
 import { MonthlyCalendar } from '@/components/features/monthly-calendar';
@@ -27,9 +28,10 @@ function formatDateShort(dateStr: string | null): string {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect('/login');
+  
+  const supabase = await createClient();
 
   // Kiểm tra có couple chưa
   const { data: memberData, error: memberError } = await supabase

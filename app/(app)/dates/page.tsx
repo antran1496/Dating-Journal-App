@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/supabase/auth';
 import { redirect } from 'next/navigation';
 import { DatesEmptyState } from '@/components/features/dates-empty-state';
 import type { DateEntry } from '@/types';
@@ -27,9 +28,10 @@ export const metadata = {
 };
 
 export default async function DatesPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect('/login');
+  
+  const supabase = await createClient();
 
   const { data: memberData } = await supabase
     .from('couple_members')

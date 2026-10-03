@@ -82,9 +82,9 @@ export function DateForm({
         type: 'success',
         title: defaultValues?.id ? t('toast.dateUpdated') : t('toast.dateCreated'),
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast({ type: 'error', title: t('toast.error') });
+      toast({ type: 'error', title: error.message || t('toast.error') });
       setIsSubmitting(false);
     }
   };

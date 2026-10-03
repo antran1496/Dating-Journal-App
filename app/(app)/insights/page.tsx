@@ -12,6 +12,7 @@ import { getZodiacSign } from '@/lib/ai/prompts/zodiac';
 import { MAJOR_ARCANA } from '@/lib/ai/prompts/tarot';
 import type { AiReading, Profile } from '@/types';
 import { useToast } from '@/components/ui/toast';
+import { useSessionUser } from '@/components/providers/session-provider';
 
 function resizeImage(file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.8): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -61,11 +62,11 @@ export default function InsightsPage() {
 
   const supabase = createClient();
   const { toast } = useToast();
+  const { user } = useSessionUser();
 
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       // 1. Get current user's profile
