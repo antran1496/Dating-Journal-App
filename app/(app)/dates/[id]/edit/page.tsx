@@ -9,6 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { DATE_QUERY_KEYS } from '@/hooks/use-dates';
 import { DateForm } from '@/components/features/date-form';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { useUpdateDate } from '@/hooks/use-date-mutations';
 import type { DateFormValues } from '@/types/forms';
 
 export default function EditDatePage() {
@@ -16,31 +17,19 @@ export default function EditDatePage() {
   const id = params.id as string;
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: date, isLoading } = useDateById(id);
 
+  const updateMutation = useUpdateDate(date?.couple_id || '');
+
   const handleSubmit = async (values: DateFormValues & { checkin_image_url?: string }) => {
-    setIsSubmitting(true);
-    setError(null);
-
-    const res = await fetch(`/api/dates/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(values),
-    });
-
-    const json = await res.json();
-    if (!res.ok) {
-      const msg = json.error ?? 'Không thể cập nhật';
-      setError(msg);
-      setIsSubmitting(false);
-      throw new Error(msg);
+    try {
+      await updateMutation.mutateAsync({ id, ...values });
+      router.push(`/dates/${id}`);
+      router.refresh();
+    } catch (err: any) {
+      throw new Error(err.message || 'Không thể cập nhật');
     }
-
-    queryClient.invalidateQueries({ queryKey: DATE_QUERY_KEYS.byId(id) });
-    window.location.href = `/dates/${id}`;
   };
 
   return (
@@ -55,10 +44,6 @@ export default function EditDatePage() {
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 p-3 rounded-[var(--radius-md)] bg-[var(--color-error)]/10 text-[var(--color-error)] text-sm">{error}</div>
-      )}
-
       {isLoading ? (
         <div className="space-y-4">
           <LoadingSkeleton variant="rect" height="160px" />
@@ -71,7 +56,6 @@ export default function EditDatePage() {
             defaultValues={date}
             onSubmit={handleSubmit}
             onCancel={() => router.back()}
-            isLoading={isSubmitting}
           />
         </div>
       ) : (

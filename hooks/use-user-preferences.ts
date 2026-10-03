@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import type { UserPreferences } from '@/types';
 import { getDefaultPreferences } from '@/lib/theme/theme-presets';
+import { useSessionUser } from '@/components/providers/session-provider';
 
 export const PREFERENCES_QUERY_KEYS = {
   current: ['user-preferences'] as const,
@@ -12,11 +13,11 @@ export const PREFERENCES_QUERY_KEYS = {
 export function useUserPreferences() {
   const supabase = createClient();
   const queryClient = useQueryClient();
+  const { user } = useSessionUser();
 
   const query = useQuery({
     queryKey: PREFERENCES_QUERY_KEYS.current,
     queryFn: async (): Promise<UserPreferences | null> => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
       const { data, error } = await supabase
@@ -37,7 +38,6 @@ export function useUserPreferences() {
 
   const updateMutation = useMutation({
     mutationFn: async (updates: Partial<Omit<UserPreferences, 'profile_id'>>) => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Chưa đăng nhập');
 
       const defaults = getDefaultPreferences();

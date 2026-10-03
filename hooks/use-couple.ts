@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { differenceInCalendarDays, addDays, addYears, startOfDay } from 'date-fns';
+import { useSessionUser } from '@/components/providers/session-provider';
 import type { CoupleWithMembers } from '@/types';
 
 export const COUPLE_QUERY_KEYS = {
@@ -73,11 +74,11 @@ export function getUpcomingMilestones(milestones: Milestone[], threshold: number
 
 export function useCouple() {
   const supabase = createClient();
+  const { user } = useSessionUser();
 
   const query = useQuery({
     queryKey: COUPLE_QUERY_KEYS.current,
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
       const { data, error } = await supabase
