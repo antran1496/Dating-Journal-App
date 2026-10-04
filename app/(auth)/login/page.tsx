@@ -1,12 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { loginSchema, type LoginFormValues } from '@/types/forms';
+import { AuthDivider, GoogleSignInButton } from '@/components/features/google-sign-in-button';
+
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  oauth_failed: 'Đăng nhập Google thất bại. Vui lòng thử lại',
+  oauth_missing_code: 'Phiên đăng nhập Google không hợp lệ. Vui lòng thử lại',
+};
+
+function mapOAuthError(errorCode: string | string[] | undefined): string | null {
+  if (typeof errorCode !== 'string') return null;
+  return OAUTH_ERROR_MESSAGES[errorCode] ?? 'Đăng nhập thất bại. Vui lòng thử lại';
+}
 
 function mapAuthError(message: string): string {
   if (message.includes('Invalid login credentials')) {
@@ -21,8 +32,10 @@ function mapAuthError(message: string): string {
   return message || 'Đăng nhập thất bại. Vui lòng thử lại';
 }
 
-export default function LoginPage() {
-  const [error, setError] = useState<string | null>(null);
+export default function LoginPage({ searchParams }: PageProps<'/login'>) {
+  // OAuth callback redirects here with `?error=...` on failure
+  const { error: oauthErrorCode } = use(searchParams);
+  const [error, setError] = useState<string | null>(() => mapOAuthError(oauthErrorCode));
   const [isLoading, setIsLoading] = useState(false);
   
   const {
@@ -65,6 +78,10 @@ export default function LoginPage() {
           {error}
         </div>
       )}
+
+      <GoogleSignInButton disabled={isLoading} onError={setError} />
+
+      <AuthDivider text="hoặc đăng nhập bằng email" />
 
       <div className="space-y-4">
         <div>
