@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { signupSchema, type SignupFormValues } from '@/types/forms';
+import { AuthDivider, GoogleSignInButton } from '@/components/features/google-sign-in-button';
 
 function mapSignupError(message: string): string {
   if (message.includes('User already registered') || message.includes('already exists')) {
@@ -44,6 +45,8 @@ export default function SignupPage() {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        // Picked up by the `handle_new_user` trigger when creating the profile
+        options: { data: { display_name: data.display_name } },
       });
 
       if (authError) {
@@ -83,6 +86,10 @@ export default function SignupPage() {
           {error}
         </div>
       )}
+
+      <GoogleSignInButton label="Đăng ký với Google" disabled={isLoading} onError={setError} />
+
+      <AuthDivider text="hoặc đăng ký bằng email" />
 
       <div className="space-y-4">
         <div>
