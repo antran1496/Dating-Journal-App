@@ -48,7 +48,7 @@ function NewDateContent() {
   return (
     <div className="max-w-xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <BackButton fallback="/dates" className="p-2 rounded-[var(--radius-md)] hover:bg-surface-hover" />
+        <BackButton fallback="/dates" forceFallback className="p-2 rounded-[var(--radius-md)] hover:bg-surface-hover" />
         <div>
           <h1 className="font-heading text-xl font-bold text-text">Ghi buổi hẹn mới 💕</h1>
           <p className="text-text-muted text-sm">Lưu lại kỷ niệm của bạn</p>
@@ -59,7 +59,7 @@ function NewDateContent() {
         <DateForm
           defaultValues={defaultDateParam ? { date_time: defaultDateParam } : undefined}
           onSubmit={handleSubmit}
-          onCancel={() => router.back()}
+          onCancel={() => router.push('/dates')}
         />
       </div>
     </div>

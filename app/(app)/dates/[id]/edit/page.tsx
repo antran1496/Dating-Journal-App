@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 import { useDateById } from '@/hooks/use-dates';
 import { useQueryClient } from '@tanstack/react-query';
 import { DATE_QUERY_KEYS } from '@/hooks/use-dates';
@@ -35,9 +34,7 @@ export default function EditDatePage() {
   return (
     <div className="max-w-xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <Link href={`/dates/${id}`} className="p-2 rounded-[var(--radius-md)] hover:bg-surface-hover transition-colors text-text-muted hover:text-text">
-          <ArrowLeft size={20} />
-        </Link>
+        <BackButton fallback="/dates" forceFallback className="p-2 rounded-[var(--radius-md)] hover:bg-surface-hover" />
         <div>
           <h1 className="font-heading text-xl font-bold text-text">Chỉnh sửa buổi hẹn ✏️</h1>
           <p className="text-text-muted text-sm">Cập nhật thông tin kỷ niệm</p>
@@ -55,7 +52,7 @@ export default function EditDatePage() {
           <DateForm
             defaultValues={date}
             onSubmit={handleSubmit}
-            onCancel={() => router.back()}
+            onCancel={() => router.push('/dates')}
           />
         </div>
       ) : (
