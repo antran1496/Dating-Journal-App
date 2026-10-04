@@ -15,29 +15,7 @@ const RELATIONSHIP_STATUS_LABELS: Record<string, string> = {
   married: 'Đã kết hôn 👑',
 };
 
-function AnimatedNumber({ value }: { value: number }) {
-  const [display, setDisplay] = useState(0);
 
-  useEffect(() => {
-    if (value === 0) return;
-    const duration = 1200;
-    const steps = 40;
-    const increment = value / steps;
-    let current = 0;
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= value) {
-        setDisplay(value);
-        clearInterval(timer);
-      } else {
-        setDisplay(Math.floor(current));
-      }
-    }, duration / steps);
-    return () => clearInterval(timer);
-  }, [value]);
-
-  return <>{display.toLocaleString('vi-VN')}</>;
-}
 
 export function CoupleCounter() {
   const { couple, daysCount, nextMilestones, isLoading } = useCouple();
@@ -86,7 +64,7 @@ export function CoupleCounter() {
           {/* Day count */}
           <div className="flex-1 text-right">
             <div className="text-5xl md:text-7xl font-heading font-bold tracking-tighter leading-none">
-              {daysCount !== null ? <AnimatedNumber value={daysCount} /> : '—'}
+              {daysCount !== null ? daysCount.toLocaleString('vi-VN') : '—'}
             </div>
             <div className="text-sm font-medium text-white/80 mt-1">
               {daysCount === 0 ? 'Hôm nay là ngày đầu tiên 🎉' : 'ngày bên nhau'}

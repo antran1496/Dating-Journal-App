@@ -50,6 +50,7 @@ export function DateForm({
     formState: { errors },
   } = useForm<DateFormValues>({
     resolver: zodResolver(dateFormSchema),
+    mode: 'onTouched',
     defaultValues: {
       location_name: defaultValues?.location_name ?? "",
       date_time: defaultValues?.date_time
@@ -114,12 +115,14 @@ export function DateForm({
         <Input
           {...register("date_time")}
           type="date"
-          label="🕐 Ngày bắt đầu"
+          label="🕐 Ngày bắt đầu *"
+          error={errors.date_time?.message}
         />
         <Input
           {...register("end_date")}
           type="date"
           label="🏁 Ngày kết thúc (tuỳ chọn)"
+          error={errors.end_date?.message}
         />
       </div>
 

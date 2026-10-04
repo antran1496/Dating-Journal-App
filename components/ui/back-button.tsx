@@ -8,12 +8,17 @@ interface BackButtonProps {
   fallback?: string;
   className?: string;
   children?: React.ReactNode;
+  forceFallback?: boolean;
 }
 
-export function BackButton({ fallback = '/dates', className = '', children }: BackButtonProps) {
+export function BackButton({ fallback = '/dates', className = '', children, forceFallback = false }: BackButtonProps) {
   const router = useRouter();
 
   const handleBack = () => {
+    if (forceFallback) {
+      router.push(fallback);
+      return;
+    }
     if (typeof window !== 'undefined' && window.history.length > 1) {
       router.back();
     } else {
