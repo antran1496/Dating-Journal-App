@@ -75,8 +75,10 @@ export function DateForm({
     if (isSubmitting || isUploadingImages) return;
     setIsSubmitting(true);
     try {
+      const sanitizedEndDate = values.end_date && values.end_date.trim() !== '' ? values.end_date : null;
       await onSubmit({
         ...values,
+        end_date: sanitizedEndDate,
         checkin_image_urls: imageUrls,
         checkin_image_url: imageUrls.length > 0 ? imageUrls[0] : undefined,
       });
@@ -84,9 +86,10 @@ export function DateForm({
         type: 'success',
         title: defaultValues?.id ? t('toast.dateUpdated') : t('toast.dateCreated'),
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      toast({ type: 'error', title: error.message || t('toast.error') });
+      const message = error instanceof Error ? error.message : t('toast.error');
+      toast({ type: 'error', title: message });
       setIsSubmitting(false);
     }
   };

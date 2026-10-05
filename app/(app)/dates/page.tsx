@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentUser } from '@/lib/supabase/auth';
 import { redirect } from 'next/navigation';
 import { DatesInfiniteList } from '@/components/features/dates-infinite-list';
@@ -17,8 +18,9 @@ export default async function DatesPage() {
   if (!user) redirect('/login');
 
   const supabase = await createClient();
+  const db = process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : supabase;
 
-  const { data: memberData } = await supabase
+  const { data: memberData } = await db
     .from('couple_members')
     .select('couple_id')
     .eq('profile_id', user.id)
@@ -27,13 +29,17 @@ export default async function DatesPage() {
   if (!memberData) redirect('/couple/setup');
 
   // Lấy 20 mục đầu tiên (trang 1) và tổng số lượng kỷ niệm (exact count)
-  const { data: dates, count } = await supabase
+  const { data: dates, count, error } = await db
     .from('dates')
     .select('*', { count: 'exact' })
     .eq('couple_id', memberData.couple_id)
     .order('date_time', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .range(0, DATES_PAGE_SIZE - 1);
+
+  if (error) {
+    console.error('[DatesPage] Error loading dates:', error);
+  }
 
   const initialDates = (dates ?? []) as DateEntry[];
   const totalCount = count ?? initialDates.length;

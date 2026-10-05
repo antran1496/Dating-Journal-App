@@ -8,18 +8,38 @@ import type { DateFormValues } from '@/types/forms';
 
 import { useSessionUser } from '@/components/providers/session-provider';
 
+function cleanPayload<T extends Record<string, unknown>>(input: T): T {
+  const result: Record<string, unknown> = { ...input };
+  const nullableFields = ['end_date', 'pros', 'cons', 'wish_next_time'];
+  for (const field of nullableFields) {
+    if (field in result) {
+      const val = result[field];
+      if (val === '' || (typeof val === 'string' && val.trim() === '')) {
+        result[field] = null;
+      }
+    }
+  }
+  return result as T;
+}
+
 export function useCreateDate(coupleId: string) {
   const queryClient = useQueryClient();
   const supabase = createClient();
   const { user } = useSessionUser();
 
   return useMutation({
-    mutationFn: async (input: DateFormValues & { checkin_image_url?: string }) => {
+    mutationFn: async (input: DateFormValues & { checkin_image_url?: string; checkin_image_urls?: string[] }) => {
       if (!user) throw new Error('Chưa đăng nhập');
+
+      const payload = cleanPayload({
+        ...input,
+        couple_id: coupleId,
+        created_by: user.id,
+      });
 
       const { data, error } = await supabase
         .from('dates')
-        .insert({ ...input, couple_id: coupleId, created_by: user.id })
+        .insert(payload)
         .select()
         .single();
 
@@ -37,10 +57,12 @@ export function useUpdateDate(coupleId: string) {
   const supabase = createClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...input }: Partial<DateFormValues> & { id: string; checkin_image_url?: string }) => {
+    mutationFn: async ({ id, ...input }: Partial<DateFormValues> & { id: string; checkin_image_url?: string; checkin_image_urls?: string[] }) => {
+      const payload = cleanPayload(input);
+
       const { data, error } = await supabase
         .from('dates')
-        .update(input)
+        .update(payload)
         .eq('id', id)
         .select()
         .single();
