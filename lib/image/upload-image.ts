@@ -4,13 +4,23 @@ export interface UploadOptions {
   bucket: string;
   folder: string;
   timeoutMs?: number;
+  maxWidth?: number;
+  maxHeight?: number;
+  quality?: number;
 }
 
 export async function uploadImage(file: File, options: UploadOptions): Promise<string> {
-  const { bucket, folder, timeoutMs = 60000 } = options;
-  
-  const compressedFile = await compressImage(file);
-  
+  const {
+    bucket,
+    folder,
+    timeoutMs = 60000,
+    maxWidth = bucket === 'avatars' ? 600 : 1280,
+    maxHeight = bucket === 'avatars' ? 600 : 1280,
+    quality = 0.8,
+  } = options;
+
+  const compressedFile = await compressImage(file, maxWidth, maxHeight, quality);
+
   const formData = new FormData();
   formData.append('file', compressedFile);
   formData.append('bucket', bucket);
