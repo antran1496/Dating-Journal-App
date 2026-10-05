@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { z } from 'zod';
 
-// Transform empty strings to undefined so Postgres doesn't receive "" for timestamp columns
-const emptyToUndefined = z.string().optional().transform((v) => (v === '' ? undefined : v));
+// Transform empty strings or null to undefined so Postgres doesn't receive "" for timestamp columns
+const emptyToUndefined = z.string().nullable().optional().transform((v) => (v === null || v === '' || (typeof v === 'string' && v.trim() === '') ? undefined : v));
 
 const createDateSchema = z.object({
   couple_id: z.string().uuid(),
@@ -32,10 +33,24 @@ export async function GET(request: NextRequest) {
   const coupleId = request.nextUrl.searchParams.get('couple_id');
   if (!coupleId) return NextResponse.json({ error: 'Thiếu couple_id' }, { status: 400 });
 
+  const db = process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : supabase;
+
+  // Xác thực user có thuộc couple_id này hay không
+  const { data: member } = await db
+    .from('couple_members')
+    .select('couple_id')
+    .eq('profile_id', user.id)
+    .eq('couple_id', coupleId)
+    .maybeSingle();
+
+  if (!member) {
+    return NextResponse.json({ error: 'Không có quyền truy cập dữ liệu couple này' }, { status: 403 });
+  }
+
   const pageParam = request.nextUrl.searchParams.get('page');
   const limitParam = request.nextUrl.searchParams.get('limit');
 
-  const query = supabase
+  const query = db
     .from('dates')
     .select('*', { count: 'exact' })
     .eq('couple_id', coupleId)
@@ -83,7 +98,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  const { data: { session } } = await supabase.auth.getSession();
+  user = session?.user ?? null;
+  if (!user) {
+    const { data: userData } = await supabase.auth.getUser();
+    user = userData?.user ?? null;
+  }
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
 
   let body: unknown;
@@ -101,7 +122,9 @@ export async function POST(request: NextRequest) {
     Object.entries({ ...parsed.data, created_by: user.id }).filter(([, v]) => v !== undefined),
   );
 
-  const { data, error } = await supabase
+  const db = process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : supabase;
+
+  const { data, error } = await db
     .from('dates')
     .insert(insertPayload)
     .select()
