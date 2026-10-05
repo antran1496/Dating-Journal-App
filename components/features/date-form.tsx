@@ -69,9 +69,10 @@ export function DateForm({
   const rating = watch("rating");
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isUploadingImages, setIsUploadingImages] = React.useState(false);
 
   const handleFormSubmit = async (values: DateFormValues) => {
-    if (isSubmitting) return;
+    if (isSubmitting || isUploadingImages) return;
     setIsSubmitting(true);
     try {
       await onSubmit({
@@ -97,7 +98,11 @@ export function DateForm({
         <label className="block text-sm font-medium text-text mb-2">
           📸 Ảnh buổi hẹn (tối đa 9 ảnh)
         </label>
-        <MultiImageUpload value={imageUrls} onChange={setImageUrls} />
+        <MultiImageUpload
+          value={imageUrls}
+          onChange={setImageUrls}
+          onUploadingChange={setIsUploadingImages}
+        />
       </div>
 
       {/* Địa điểm */}
@@ -177,8 +182,13 @@ export function DateForm({
           variant="primary"
           className="flex-1"
           isLoading={isLoading || isSubmitting}
+          disabled={isUploadingImages}
         >
-          {defaultValues?.id ? "Lưu thay đổi" : "Thêm buổi hẹn 💕"}
+          {isUploadingImages
+            ? 'Đang tải ảnh lên...'
+            : defaultValues?.id
+            ? 'Lưu thay đổi'
+            : 'Thêm buổi hẹn 💕'}
         </Button>
         {onCancel && (
           <Button type="button" variant="ghost" onClick={onCancel}>
