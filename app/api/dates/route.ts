@@ -20,18 +20,50 @@ const createDateSchema = z.object({
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  const user = session?.user;
+  if (sessionError || !user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
 
   const coupleId = request.nextUrl.searchParams.get('couple_id');
   if (!coupleId) return NextResponse.json({ error: 'Thiếu couple_id' }, { status: 400 });
 
-  const { data, error } = await supabase
+  const pageParam = request.nextUrl.searchParams.get('page');
+  const limitParam = request.nextUrl.searchParams.get('limit');
+
+  const query = supabase
     .from('dates')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('couple_id', coupleId)
     .order('date_time', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false });
+
+  if (pageParam || limitParam) {
+    const page = Math.max(1, parseInt(pageParam || '1', 10));
+    const limit = Math.max(1, parseInt(limitParam || '20', 10));
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data, count, error } = await query.range(from, to);
+
+    if (error) {
+      console.error('[GET /api/dates]', error);
+      return NextResponse.json(
+        { error: `Không thể tải dữ liệu: ${error.message}`, code: error.code, details: error.details },
+        { status: 500 },
+      );
+    }
+
+    const total = count ?? 0;
+    return NextResponse.json({
+      data: data ?? [],
+      total,
+      page,
+      limit,
+      hasMore: from + (data?.length ?? 0) < total,
+    });
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('[GET /api/dates]', error);
