@@ -73,15 +73,16 @@ export function DatesInfiniteList({ initialDates, coupleId }: DatesInfiniteListP
     };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const allDates = data ? data.pages.flat() : initialDates;
+  const allDates = data?.pages ? data.pages.flat() : initialDates;
+  const displayDates = allDates.length > 0 ? allDates : initialDates;
 
-  if (allDates.length === 0) {
+  if (displayDates.length === 0) {
     return <DatesEmptyState />;
   }
 
   return (
     <div className="flex flex-col gap-4">
-      {allDates.map((date) => {
+      {displayDates.map((date) => {
         const thumbnail = date.checkin_image_urls?.[0] ?? date.checkin_image_url;
         return (
           <Link
@@ -164,9 +165,9 @@ export function DatesInfiniteList({ initialDates, coupleId }: DatesInfiniteListP
       )}
 
       {/* Đã tải hết danh sách */}
-      {!hasNextPage && allDates.length > 0 && (
+      {!hasNextPage && displayDates.length > 0 && (
         <div className="py-6 text-center text-xs text-text-muted opacity-70">
-          ✨ Đã hiển thị tất cả {allDates.length} kỷ niệm
+          ✨ Đã hiển thị tất cả {displayDates.length} kỷ niệm
         </div>
       )}
     </div>

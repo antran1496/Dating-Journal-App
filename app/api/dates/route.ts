@@ -20,9 +20,14 @@ const createDateSchema = z.object({
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  const user = session?.user;
-  if (sessionError || !user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+  let user = null;
+  const { data: { session } } = await supabase.auth.getSession();
+  user = session?.user ?? null;
+  if (!user) {
+    const { data: userData } = await supabase.auth.getUser();
+    user = userData?.user ?? null;
+  }
+  if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
 
   const coupleId = request.nextUrl.searchParams.get('couple_id');
   if (!coupleId) return NextResponse.json({ error: 'Thiếu couple_id' }, { status: 400 });

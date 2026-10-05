@@ -14,24 +14,17 @@ export const DATE_QUERY_KEYS = {
 };
 
 export function useDates(coupleId: string | undefined) {
-  const supabase = createClient();
-
   return useQuery({
     queryKey: DATE_QUERY_KEYS.byCoupleId(coupleId ?? ''),
     queryFn: async () => {
       if (!coupleId) return [];
-      const { data, error } = await supabase
-        .from('dates')
-        .select('*')
-        .eq('couple_id', coupleId)
-        .order('date_time', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw new Error(error.message);
-      return (data ?? []) as DateEntry[];
+      const res = await fetch(`/api/dates?couple_id=${coupleId}`);
+      if (!res.ok) throw new Error('Không thể tải dữ liệu');
+      const json = await res.json();
+      return (json.data ?? []) as DateEntry[];
     },
     enabled: !!coupleId,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -42,25 +35,19 @@ export function useInfiniteDates(
     pageParams: number[];
   }
 ) {
-  const supabase = createClient();
-
   return useInfiniteQuery({
     queryKey: DATE_QUERY_KEYS.infinite(coupleId ?? ''),
     queryFn: async ({ pageParam = 0 }) => {
       if (!coupleId) return [];
-      const from = pageParam * DATES_PAGE_SIZE;
-      const to = from + DATES_PAGE_SIZE - 1;
-
-      const { data, error } = await supabase
-        .from('dates')
-        .select('*')
-        .eq('couple_id', coupleId)
-        .order('date_time', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
-      if (error) throw new Error(error.message);
-      return (data ?? []) as DateEntry[];
+      const page = (pageParam as number) + 1;
+      const res = await fetch(
+        `/api/dates?couple_id=${coupleId}&page=${page}&limit=${DATES_PAGE_SIZE}`
+      );
+      if (!res.ok) {
+        throw new Error('Không thể tải kỷ niệm');
+      }
+      const json = await res.json();
+      return (json.data ?? []) as DateEntry[];
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) => {
@@ -70,8 +57,9 @@ export function useInfiniteDates(
       return (lastPageParam as number) + 1;
     },
     initialData,
+    refetchOnMount: false, // Dùng dữ liệu initialData của server, không tự động refetch đè trang 1 khi mount
     enabled: !!coupleId,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 60 * 5, // 5 phút
   });
 }
 
