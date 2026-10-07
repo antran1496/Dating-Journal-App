@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
-import { DATE_QUERY_KEYS } from './use-dates';
+import { keys as queryKeys } from '@/lib/query/keys';
 import type { DateEntry } from '@/types';
 import type { DateFormValues } from '@/types/forms';
 
@@ -46,8 +46,17 @@ export function useCreateDate(coupleId: string) {
       if (error) throw new Error(error.message);
       return data as DateEntry;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: DATE_QUERY_KEYS.byCoupleId(coupleId) });
+    onSuccess: (newData) => {
+      // Phase 5: Cập nhật cache ngay lập tức thay vì đợi refresh
+      // Update the infinite dates
+      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: any) => {
+        if (!oldData || !oldData.pages || oldData.pages.length === 0) return oldData;
+        const newPages = [...oldData.pages];
+        newPages[0] = [newData, ...newPages[0]];
+        return { ...oldData, pages: newPages };
+      });
+      // Invalidate để bảo đảm dữ liệu đồng bộ
+      queryClient.invalidateQueries({ queryKey: queryKeys.dates.scope(coupleId) });
     },
   });
 }
@@ -71,8 +80,17 @@ export function useUpdateDate(coupleId: string) {
       return data as DateEntry;
     },
     onSuccess: (updated) => {
-      queryClient.invalidateQueries({ queryKey: DATE_QUERY_KEYS.byCoupleId(coupleId) });
-      queryClient.invalidateQueries({ queryKey: DATE_QUERY_KEYS.byId(updated.id) });
+      queryClient.setQueryData(queryKeys.dates.detail(updated.id), updated);
+      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: any) => {
+        if (!oldData || !oldData.pages) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: DateEntry[]) =>
+            page.map((date) => (date.id === updated.id ? updated : date))
+          ),
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dates.scope(coupleId) });
     },
   });
 }
@@ -87,8 +105,18 @@ export function useDeleteDate(coupleId: string) {
       if (error) throw new Error(error.message);
       return id;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: DATE_QUERY_KEYS.byCoupleId(coupleId) });
+    onSuccess: (deletedId) => {
+      queryClient.removeQueries({ queryKey: queryKeys.dates.detail(deletedId) });
+      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: any) => {
+        if (!oldData || !oldData.pages) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: DateEntry[]) =>
+            page.filter((date) => date.id !== deletedId)
+          ),
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dates.scope(coupleId) });
     },
   });
 }

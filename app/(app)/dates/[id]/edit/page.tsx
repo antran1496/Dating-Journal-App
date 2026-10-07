@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { BackButton } from '@/components/ui/back-button';
 import { useDateById } from '@/hooks/use-dates';
 import { useQueryClient } from '@tanstack/react-query';
-import { DATE_QUERY_KEYS } from '@/hooks/use-dates';
+import { keys as queryKeys } from '@/lib/query/keys';
 import { DateForm } from '@/components/features/date-form';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { useUpdateDate } from '@/hooks/use-date-mutations';
@@ -25,7 +25,6 @@ export default function EditDatePage() {
     try {
       await updateMutation.mutateAsync({ id, ...values });
       router.push(`/dates/${id}`);
-      router.refresh();
     } catch (err: any) {
       throw new Error(err.message || 'Không thể cập nhật');
     }

@@ -5,10 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import type { UserPreferences } from '@/types';
 import { getDefaultPreferences } from '@/lib/theme/theme-presets';
 import { useSessionUser } from '@/components/providers/session-provider';
-
-export const PREFERENCES_QUERY_KEYS = {
-  current: ['user-preferences'] as const,
-};
+import { keys as queryKeys } from '@/lib/query/keys';
+import { getPreferences } from '@/lib/queries/profile';
 
 export function useUserPreferences() {
   const supabase = createClient();
@@ -16,24 +14,12 @@ export function useUserPreferences() {
   const { user } = useSessionUser();
 
   const query = useQuery({
-    queryKey: PREFERENCES_QUERY_KEYS.current,
+    queryKey: queryKeys.preferences.me(),
     queryFn: async (): Promise<UserPreferences | null> => {
       if (!user) return null;
-
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('profile_id', user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('[useUserPreferences] fetch error:', error);
-        return null;
-      }
-
-      return data as UserPreferences | null;
+      return getPreferences(supabase, user.id);
     },
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    enabled: !!user,
   });
 
   const updateMutation = useMutation({
@@ -58,7 +44,7 @@ export function useUserPreferences() {
       return data as UserPreferences;
     },
     onSuccess: (updated) => {
-      queryClient.setQueryData(PREFERENCES_QUERY_KEYS.current, updated);
+      queryClient.setQueryData(queryKeys.preferences.me(), updated);
     },
   });
 
@@ -72,3 +58,4 @@ export function useUserPreferences() {
     isUpdating: updateMutation.isPending,
   };
 }
+
