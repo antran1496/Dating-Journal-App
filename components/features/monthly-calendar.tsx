@@ -3,7 +3,7 @@
 import { useLocale } from '@/components/providers/locale-provider';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { useCouple } from '@/hooks/use-couple';
-import { useDates } from '@/hooks/use-dates';
+import { useCalendarDates } from '@/hooks/use-dates';
 import type { DateEntry } from '@/types';
 import {
   addMonths,
@@ -44,7 +44,7 @@ export function MonthlyCalendar() {
   const router = useRouter();
 
   const { couple, isLoading: isLoadingCouple } = useCouple();
-  const { data: dates, isLoading: isLoadingDates } = useDates(couple?.id);
+  const { data: dates, isLoading: isLoadingDates } = useCalendarDates(couple?.id);
 
   if (isLoadingCouple) {
     return <LoadingSkeleton variant="rect" height="400px" className="rounded-[var(--radius-lg)]" />;
@@ -66,10 +66,9 @@ export function MonthlyCalendar() {
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
-  // Find dates for a specific day
   const getDatesForDay = (day: Date) => {
     if (!dates) return [];
-    return dates.filter((d: DateEntry) => {
+    return dates.filter((d) => {
       const entryDate = d.date_time ? new Date(d.date_time) : new Date(d.created_at);
       return isSameDay(entryDate, day);
     });

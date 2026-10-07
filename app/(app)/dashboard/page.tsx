@@ -1,53 +1,19 @@
+'use client';
+
 import React from 'react';
 import { Plus, Calendar } from 'lucide-react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
-import { getCurrentUser } from '@/lib/supabase/auth';
-import { redirect } from 'next/navigation';
 import { CoupleCounter } from '@/components/features/couple-counter';
 import { MonthlyCalendar } from '@/components/features/monthly-calendar';
 import { MilestoneCelebration } from '@/components/features/milestone-celebration';
 import { MilestoneBanner } from '@/components/features/milestone-banner';
-import { DashboardEmptyDates } from '@/components/features/dashboard-empty-dates';
-import type { DateEntry } from '@/types';
+import { useCouple } from '@/hooks/use-couple';
 
-async function getRecentDates(coupleId: string): Promise<DateEntry[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('dates')
-    .select('*')
-    .eq('couple_id', coupleId)
-    .order('created_at', { ascending: false })
-    .limit(3);
-  return (data ?? []) as DateEntry[];
-}
+export default function DashboardPage() {
+  const { couple, isLoading: isLoadingCouple } = useCouple();
 
-function formatDateShort(dateStr: string | null): string {
-  if (!dateStr) return '';
-  return new Intl.DateTimeFormat('vi-VN', { day: 'numeric', month: 'numeric', year: 'numeric' }).format(new Date(dateStr));
-}
-
-export default async function DashboardPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
-  
-  const supabase = await createClient();
-
-  // Kiểm tra có couple chưa
-  const { data: memberData, error: memberError } = await supabase
-    .from('couple_members')
-    .select('couple_id')
-    .eq('profile_id', user.id)
-    .maybeSingle();
-
-  if (memberError) throw new Error('Không thể tải dữ liệu. Vui lòng thử lại.');
-  if (!memberData) redirect('/couple/setup');
-
-  let recentDates: DateEntry[] = [];
-  try {
-    recentDates = await getRecentDates(memberData.couple_id);
-  } catch {
-    // Silently fail — show empty list instead of crashing
+  if (isLoadingCouple) {
+    return <div className="p-8 text-center text-text-muted">Đang tải dữ liệu...</div>;
   }
 
   return (
@@ -94,49 +60,7 @@ export default async function DashboardPage() {
           </div>
         </Link>
       </div>
-
-      {/* Recent Dates */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-heading font-bold text-lg text-text">Kỷ niệm gần đây</h2>
-          {recentDates.length > 0 && (
-            <Link href="/dates" className="text-primary text-sm font-medium hover:underline">Xem tất cả →</Link>
-          )}
-        </div>
-
-        {recentDates.length === 0 ? (
-          <DashboardEmptyDates />
-        ) : (
-          <div className="space-y-3">
-            {recentDates.map((date) => (
-              <Link
-                key={date.id}
-                href={`/dates/${date.id}`}
-                className="flex items-center gap-4 p-4 rounded-[var(--radius-lg)] bg-surface border border-border hover:border-primary/30 hover:shadow-sm transition-all group"
-              >
-                {date.checkin_image_url ? (
-                  <img
-                    src={date.checkin_image_url}
-                    alt={date.location_name ?? ''}
-                    className="w-14 h-14 rounded-[var(--radius-md)] object-cover flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-[var(--radius-md)] bg-primary/10 flex items-center justify-center flex-shrink-0 text-2xl">
-                    📍
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-text truncate">{date.location_name ?? 'Không có địa điểm'}</p>
-                  <p className="text-text-muted text-sm">{formatDateShort(date.date_time ?? date.created_at)}</p>
-                </div>
-                {date.rating && (
-                  <div className="text-primary text-sm font-bold">{date.rating}⭐</div>
-                )}
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 }
+

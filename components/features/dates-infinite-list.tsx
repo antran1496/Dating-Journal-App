@@ -8,7 +8,6 @@ import { DatesEmptyState } from '@/components/features/dates-empty-state';
 import type { DateEntry } from '@/types';
 
 interface DatesInfiniteListProps {
-  initialDates: DateEntry[];
   coupleId: string;
 }
 
@@ -32,7 +31,7 @@ function formatDate(dateStr: string | null, endDateStr: string | null = null): s
   return start;
 }
 
-export function DatesInfiniteList({ initialDates, coupleId }: DatesInfiniteListProps) {
+export function DatesInfiniteList({ coupleId }: DatesInfiniteListProps) {
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   const {
@@ -41,10 +40,8 @@ export function DatesInfiniteList({ initialDates, coupleId }: DatesInfiniteListP
     hasNextPage,
     isFetchingNextPage,
     isError,
-  } = useInfiniteDates(coupleId, {
-    pages: [initialDates],
-    pageParams: [0],
-  });
+    isLoading
+  } = useInfiniteDates(coupleId);
 
   // Tự động load more khi scroll tới cuối trang
   useEffect(() => {
@@ -73,8 +70,11 @@ export function DatesInfiniteList({ initialDates, coupleId }: DatesInfiniteListP
     };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const allDates = data?.pages ? data.pages.flat() : initialDates;
-  const displayDates = allDates.length > 0 ? allDates : initialDates;
+  if (isLoading) {
+    return <div className="p-8 text-center text-text-muted">Đang tải kỷ niệm...</div>;
+  }
+
+  const displayDates = data?.pages ? data.pages.flat() : [];
 
   if (displayDates.length === 0) {
     return <DatesEmptyState />;

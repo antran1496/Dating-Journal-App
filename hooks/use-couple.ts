@@ -5,10 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { differenceInCalendarDays, addDays, addYears, startOfDay } from 'date-fns';
 import { useSessionUser } from '@/components/providers/session-provider';
 import type { CoupleWithMembers } from '@/types';
-
-export const COUPLE_QUERY_KEYS = {
-  current: ['couple', 'current'] as const,
-};
+import { keys as queryKeys } from '@/lib/query/keys';
+import { getCouple } from '@/lib/queries/couple';
 
 export type Milestone = {
   label: string;
@@ -77,45 +75,12 @@ export function useCouple() {
   const { user } = useSessionUser();
 
   const query = useQuery({
-    queryKey: COUPLE_QUERY_KEYS.current,
+    queryKey: queryKeys.couple.current(),
     queryFn: async () => {
       if (!user) return null;
-
-      const { data, error } = await supabase
-        .from('couple_members')
-        .select(`
-          couple_id,
-          nickname,
-          role,
-          couple:couples(
-            id,
-            invite_code,
-            anniversary_date,
-            relationship_status,
-            created_by,
-            created_at,
-            couple_members(
-              couple_id,
-              profile_id,
-              nickname,
-              role,
-              profile:profiles(
-                id,
-                display_name,
-                avatar_url,
-                birth_date,
-                created_at
-              )
-            )
-          )
-        `)
-        .eq('profile_id', user.id)
-        .maybeSingle();
-
-      if (error || !data?.couple) return null;
-      return data.couple as unknown as CoupleWithMembers;
+      return getCouple(supabase, user.id);
     },
-    staleTime: 1000 * 60 * 5,
+    enabled: !!user,
   });
 
   const couple = query.data;
@@ -137,3 +102,4 @@ export function useCouple() {
     refetch: query.refetch,
   };
 }
+

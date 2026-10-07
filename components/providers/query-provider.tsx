@@ -1,23 +1,28 @@
 'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { makeQueryClient } from '@/lib/query/query-client';
+import { AuthCacheGuard } from './auth-cache-guard';
+
+let browserQueryClient: ReturnType<typeof makeQueryClient> | undefined = undefined;
+
+function getQueryClient() {
+  if (typeof window === 'undefined') {
+    // Server: always make a new query client
+    return makeQueryClient();
+  } else {
+    // Browser: make a new query client if we don't already have one
+    if (!browserQueryClient) browserQueryClient = makeQueryClient();
+    return browserQueryClient;
+  }
+}
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 5 * 60 * 1000, // 5 minutes
-            refetchOnWindowFocus: false, // Prevent refetching when switching tabs
-            refetchOnReconnect: false,
-          },
-        },
-      })
-  );
+  const queryClient = getQueryClient();
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthCacheGuard>{children}</AuthCacheGuard>
+    </QueryClientProvider>
   );
 }

@@ -1,55 +1,34 @@
+'use client';
+
 import React from 'react';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { getCurrentUser } from '@/lib/supabase/auth';
-import { redirect } from 'next/navigation';
 import { DatesInfiniteList } from '@/components/features/dates-infinite-list';
-import { DATES_PAGE_SIZE } from '@/hooks/use-dates';
-import type { DateEntry } from '@/types';
+import { useCouple } from '@/hooks/use-couple';
+import { useInfiniteDates } from '@/hooks/use-dates';
 
-export const metadata = {
-  title: 'Buổi hẹn hò | Dating Journal',
-};
-
-export default async function DatesPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
-
-  const supabase = await createClient();
-  const db = process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : supabase;
-
-  const { data: memberData } = await db
-    .from('couple_members')
-    .select('couple_id')
-    .eq('profile_id', user.id)
-    .maybeSingle();
-
-  if (!memberData) redirect('/couple/setup');
-
-  // Lấy 20 mục đầu tiên (trang 1) và tổng số lượng kỷ niệm (exact count)
-  const { data: dates, count, error } = await db
-    .from('dates')
-    .select('*', { count: 'exact' })
-    .eq('couple_id', memberData.couple_id)
-    .order('date_time', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false })
-    .range(0, DATES_PAGE_SIZE - 1);
-
-  if (error) {
-    console.error('[DatesPage] Error loading dates:', error);
+export default function DatesPage() {
+  const { couple, isLoading: isLoadingCouple } = useCouple();
+  
+  // Lấy dữ liệu dates trực tiếp từ cache hoặc hook (đã được prefetch bởi CacheWarmup)
+  const { data } = useInfiniteDates(couple?.id);
+  
+  const totalCount = data?.pages ? data.pages.flat().length : 0;
+  
+  if (isLoadingCouple) {
+    return <div className="p-8 text-center text-text-muted">Đang tải dữ liệu...</div>;
   }
 
-  const initialDates = (dates ?? []) as DateEntry[];
-  const totalCount = count ?? initialDates.length;
+  if (!couple) {
+    return null; // CoupleGuard sẽ xử lý redirect
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Buổi hẹn hò 📅</h1>
-          <p className="text-text-muted text-sm mt-1">{totalCount} kỷ niệm đã ghi lại</p>
+          <p className="text-text-muted text-sm mt-1">{totalCount} kỷ niệm đã hiển thị</p>
         </div>
         <Link
           href="/dates/new"
@@ -59,10 +38,8 @@ export default async function DatesPage() {
         </Link>
       </div>
 
-      <DatesInfiniteList
-        initialDates={initialDates}
-        coupleId={memberData.couple_id}
-      />
+      <DatesInfiniteList coupleId={couple.id} />
     </div>
   );
 }
+
