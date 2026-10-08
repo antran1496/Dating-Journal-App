@@ -55,24 +55,48 @@ export async function registerUser(input: { email: string; password: string; dis
   return { id: user.id as string };
 }
 
-type GoogleProfile = { sub: string; email: string; name?: string | null; picture?: string | null };
+export type OAuthProfile = {
+  provider: 'google' | 'apple';
+  sub: string;
+  email: string;
+  name?: string | null;
+  picture?: string | null;
+  emailVerified?: boolean | string | null;
+};
 
-/** Tìm theo sub → liên kết theo email → tạo mới. Gọi lúc đăng nhập Google. Trả {id}. */
-export async function upsertGoogleUser(p: GoogleProfile, retry = true): Promise<{ id: string }> {
+/** Tìm theo provider + sub → liên kết theo email → tạo mới. Gọi lúc đăng nhập Google / Apple. Trả {id}. */
+export async function upsertOAuthUser(p: OAuthProfile, retry = true): Promise<{ id: string }> {
   const email = p.email.toLowerCase();
   const now = new Date().toISOString();
 
-  const { data: acc } = await db().from('auth_accounts').select('user_id')
-    .eq('provider', 'google').eq('provider_account_id', p.sub).maybeSingle();
+  // 1. Tìm theo provider + sub
+  const { data: acc } = await db()
+    .from('auth_accounts')
+    .select('user_id')
+    .eq('provider', p.provider)
+    .eq('provider_account_id', p.sub)
+    .maybeSingle();
+
   if (acc) {
     await db().from('auth_users').update({ last_sign_in_at: now }).eq('id', acc.user_id);
     return { id: acc.user_id };
   }
 
-  const { data: existing } = await db().from('auth_users').select('id, email_verified_at').eq('email', email).maybeSingle();
+  // 2. Tìm theo email
+  const { data: existing } = await db()
+    .from('auth_users')
+    .select('id, email_verified_at')
+    .eq('email', email)
+    .maybeSingle();
+
   if (existing) {
-    const { error } = await db().from('auth_accounts').insert({ provider: 'google', provider_account_id: p.sub, user_id: existing.id });
+    const { error } = await db().from('auth_accounts').insert({
+      provider: p.provider,
+      provider_account_id: p.sub,
+      user_id: existing.id,
+    });
     if (error && error.code !== '23505') throw error;
+
     // Chống "pre-hijack": nếu email chưa từng được xác thực, mật khẩu đăng ký trước đó có thể do kẻ khác đặt → xoá
     await db().from('auth_users').update(
       existing.email_verified_at
@@ -82,15 +106,32 @@ export async function upsertGoogleUser(p: GoogleProfile, retry = true): Promise<
     return { id: existing.id };
   }
 
-  const { data: created, error: cErr } = await db().from('auth_users')
-    .insert({ email, email_verified_at: now, last_sign_in_at: now }).select('id').single();
-  if (cErr?.code === '23505' && retry) return upsertGoogleUser(p, false); // 2 request đăng nhập đồng thời
+  // 3. Tạo user mới
+  const { data: created, error: cErr } = await db()
+    .from('auth_users')
+    .insert({ email, email_verified_at: now, last_sign_in_at: now })
+    .select('id')
+    .single();
+
+  if (cErr?.code === '23505' && retry) return upsertOAuthUser(p, false); // 2 request đăng nhập đồng thời
   if (cErr || !created) throw cErr ?? new Error('create user failed');
 
-  await db().from('auth_accounts').insert({ provider: 'google', provider_account_id: p.sub, user_id: created.id });
+  await db().from('auth_accounts').insert({
+    provider: p.provider,
+    provider_account_id: p.sub,
+    user_id: created.id,
+  });
+
+  const displayName = p.name?.trim() || email.split('@')[0];
   await db().from('profiles').upsert(
-    { id: created.id, display_name: p.name?.trim() || email.split('@')[0], avatar_url: p.picture ?? null },
+    { id: created.id, display_name: displayName, avatar_url: p.picture ?? null },
     { onConflict: 'id', ignoreDuplicates: true },
   );
+
   return { id: created.id };
 }
+
+export async function upsertGoogleUser(p: { sub: string; email: string; name?: string | null; picture?: string | null }) {
+  return upsertOAuthUser({ ...p, provider: 'google', emailVerified: true });
+}
+

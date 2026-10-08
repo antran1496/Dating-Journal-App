@@ -1,8 +1,9 @@
 import NextAuth, { CredentialsSignin } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
+import Apple from 'next-auth/providers/apple';
 import { loginSchema } from '@/types/forms';
-import { authenticateWithPassword, RateLimitedError, upsertGoogleUser } from '@/lib/auth/users';
+import { authenticateWithPassword, RateLimitedError, upsertOAuthUser } from '@/lib/auth/users';
 
 class InvalidCredentials extends CredentialsSignin {
   code = 'invalid_credentials';
@@ -23,6 +24,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
       authorization: { params: { prompt: 'select_account' } }, // giữ hành vi cũ
     }),
+    ...(process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET
+      ? [
+          Apple({
+            clientId: process.env.AUTH_APPLE_ID,
+            clientSecret: process.env.AUTH_APPLE_SECRET,
+          }),
+        ]
+      : []),
     Credentials({
       credentials: { email: {}, password: {} },
       async authorize(raw, request) {
@@ -43,18 +52,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === 'google') return profile?.email_verified === true && !!profile.email;
+      if (account?.provider === 'apple') {
+        const rawVerified = (profile as Record<string, unknown> | undefined)?.email_verified;
+        const isVerified = rawVerified === true || rawVerified === 'true';
+        return isVerified && !!profile?.email;
+      }
       return true;
     },
     async jwt({ token, user, account, profile }) {
       // Chỉ chạy nhánh này lúc đăng nhập (account có giá trị)
-      if (account?.provider === 'google' && profile?.sub && profile.email) {
-        const u = await upsertGoogleUser({
+      if ((account?.provider === 'google' || account?.provider === 'apple') && profile?.sub && profile.email) {
+        let nameStr: string | undefined = undefined;
+        if (typeof profile.name === 'string') {
+          nameStr = profile.name;
+        } else if (profile.name && typeof profile.name === 'object') {
+          const { firstName, lastName } = profile.name as { firstName?: string; lastName?: string };
+          nameStr = [firstName, lastName].filter(Boolean).join(' ') || undefined;
+        }
+
+        const u = await upsertOAuthUser({
+          provider: account.provider as 'google' | 'apple',
           sub: profile.sub,
           email: profile.email,
-          name: profile.name as string | undefined,
-          picture: profile.picture as string | undefined,
+          name: nameStr,
+          picture: (profile as { picture?: string }).picture,
+          emailVerified: profile.email_verified as boolean | string | undefined,
         });
-        token.sub = u.id; // ghi đè sub của Google bằng UUID nội bộ
+        token.sub = u.id; // ghi đè sub của OAuth bằng UUID nội bộ
       } else if (account?.provider === 'credentials' && user?.id) {
         token.sub = user.id;
       }
@@ -66,3 +90,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
