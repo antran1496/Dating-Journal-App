@@ -14,7 +14,7 @@ export async function getDates(
 
   const { data, error } = await supabase
     .from('dates')
-    .select('*')
+    .select('*, date_places(*), date_media(*)')
     .eq('couple_id', coupleId)
     .order('date_time', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
@@ -52,7 +52,7 @@ export async function getDateById(
 ): Promise<DateEntry | null> {
   const { data, error } = await supabase
     .from('dates')
-    .select('*')
+    .select('*, date_places(*), date_media(*)')
     .eq('id', id)
     .maybeSingle();
 

@@ -1,61 +1,57 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
 import { keys as queryKeys } from '@/lib/query/keys';
 import type { DateEntry } from '@/types';
-import type { DateFormValues } from '@/types/forms';
+import type { DateFormValues, DatePlaceInput, DateMediaInput } from '@/types/forms';
 
-import { useSessionUser } from '@/components/providers/session-provider';
+export type CreateDatePayload = DateFormValues & {
+  places?: DatePlaceInput[];
+  media?: DateMediaInput[];
+  checkin_image_url?: string;
+  checkin_image_urls?: string[];
+};
 
-function cleanPayload<T extends Record<string, unknown>>(input: T): T {
-  const result: Record<string, unknown> = { ...input };
-  const nullableFields = ['end_date', 'pros', 'cons', 'wish_next_time'];
-  for (const field of nullableFields) {
-    if (field in result) {
-      const val = result[field];
-      if (val === '' || (typeof val === 'string' && val.trim() === '')) {
-        result[field] = null;
-      }
-    }
-  }
-  return result as T;
-}
+export type UpdateDatePayload = Partial<DateFormValues> & {
+  id: string;
+  places?: DatePlaceInput[];
+  media?: DateMediaInput[];
+  checkin_image_url?: string;
+  checkin_image_urls?: string[];
+};
 
 export function useCreateDate(coupleId: string) {
   const queryClient = useQueryClient();
-  const supabase = createClient();
-  const { user } = useSessionUser();
 
   return useMutation({
-    mutationFn: async (input: DateFormValues & { checkin_image_url?: string; checkin_image_urls?: string[] }) => {
-      if (!user) throw new Error('Chưa đăng nhập');
-
-      const payload = cleanPayload({
-        ...input,
-        couple_id: coupleId,
-        created_by: user.id,
+    mutationFn: async (input: CreateDatePayload) => {
+      const res = await fetch('/api/dates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...input,
+          couple_id: coupleId,
+        }),
       });
 
-      const { data, error } = await supabase
-        .from('dates')
-        .insert(payload)
-        .select()
-        .single();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.error || 'Không thể tạo buổi hẹn, vui lòng thử lại');
+      }
 
-      if (error) throw new Error(error.message);
-      return data as DateEntry;
+      return json.data as DateEntry;
     },
     onSuccess: (newData) => {
-      // Phase 5: Cập nhật cache ngay lập tức thay vì đợi refresh
-      // Update the infinite dates
-      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: { pages?: DateEntry[][] } | undefined) => {
-        if (!oldData || !oldData.pages || oldData.pages.length === 0) return oldData;
-        const newPages = [...oldData.pages];
-        newPages[0] = [newData, ...newPages[0]];
-        return { ...oldData, pages: newPages };
-      });
-      // Invalidate để bảo đảm dữ liệu đồng bộ
+      // Cập nhật cache ngay lập tức
+      queryClient.setQueryData(
+        queryKeys.dates.list(coupleId),
+        (oldData: { pages?: DateEntry[][] } | undefined) => {
+          if (!oldData || !oldData.pages || oldData.pages.length === 0) return oldData;
+          const newPages = [...oldData.pages];
+          newPages[0] = [newData, ...newPages[0]];
+          return { ...oldData, pages: newPages };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: queryKeys.dates.scope(coupleId) });
     },
   });
@@ -63,33 +59,36 @@ export function useCreateDate(coupleId: string) {
 
 export function useUpdateDate(coupleId: string) {
   const queryClient = useQueryClient();
-  const supabase = createClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...input }: Partial<DateFormValues> & { id: string; checkin_image_url?: string; checkin_image_urls?: string[] }) => {
-      const payload = cleanPayload(input);
+    mutationFn: async ({ id, ...input }: UpdateDatePayload) => {
+      const res = await fetch(`/api/dates/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
 
-      const { data, error } = await supabase
-        .from('dates')
-        .update(payload)
-        .eq('id', id)
-        .select()
-        .single();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.error || 'Không thể cập nhật buổi hẹn');
+      }
 
-      if (error) throw new Error(error.message);
-      return data as DateEntry;
+      return json.data as DateEntry;
     },
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.dates.detail(updated.id), updated);
-      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: { pages?: DateEntry[][] } | undefined) => {
-        if (!oldData || !oldData.pages) return oldData;
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page: DateEntry[]) =>
-            page.map((date) => (date.id === updated.id ? updated : date))
-          ),
-        };
-      });
+      queryClient.setQueryData(
+        queryKeys.dates.list(coupleId),
+        (oldData: { pages?: DateEntry[][] } | undefined) => {
+          if (!oldData || !oldData.pages) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: DateEntry[]) =>
+              page.map((date) => (date.id === updated.id ? updated : date))
+            ),
+          };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: queryKeys.dates.scope(coupleId) });
     },
   });
@@ -97,25 +96,34 @@ export function useUpdateDate(coupleId: string) {
 
 export function useDeleteDate(coupleId: string) {
   const queryClient = useQueryClient();
-  const supabase = createClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('dates').delete().eq('id', id);
-      if (error) throw new Error(error.message);
+      const res = await fetch(`/api/dates/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || 'Không thể xóa buổi hẹn');
+      }
+
       return id;
     },
     onSuccess: (deletedId) => {
       queryClient.removeQueries({ queryKey: queryKeys.dates.detail(deletedId) });
-      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: { pages?: DateEntry[][] } | undefined) => {
-        if (!oldData || !oldData.pages) return oldData;
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page: DateEntry[]) =>
-            page.filter((date) => date.id !== deletedId)
-          ),
-        };
-      });
+      queryClient.setQueryData(
+        queryKeys.dates.list(coupleId),
+        (oldData: { pages?: DateEntry[][] } | undefined) => {
+          if (!oldData || !oldData.pages) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: DateEntry[]) =>
+              page.filter((date) => date.id !== deletedId)
+            ),
+          };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: queryKeys.dates.scope(coupleId) });
     },
   });
