@@ -104,3 +104,27 @@ export type UsageCounter = {
   count: number;
 };
 
+export type CoupleInvite = {
+  id: string;
+  couple_id: string;
+  created_by: string | null;
+  token_hash: string;
+  code_hash: string;
+  code_hint: string;
+  message: string | null;
+  expires_at: string;
+  used_at: string | null;
+  used_by: string | null;
+  revoked_at: string | null;
+  created_at: string;
+};
+
+export type InviteAttempt = {
+  id: number;
+  profile_id: string | null;
+  ip: string | null;
+  success: boolean;
+  created_at: string;
+};
+
+
