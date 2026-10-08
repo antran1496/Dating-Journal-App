@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentUser } from '@/lib/auth/session';
 import { z } from 'zod';
 
@@ -28,10 +27,8 @@ export async function GET(request: NextRequest) {
   const coupleId = request.nextUrl.searchParams.get('couple_id');
   if (!coupleId) return NextResponse.json({ error: 'Thiếu couple_id' }, { status: 400 });
 
-  const db = process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : supabase;
-
   // Xác thực user có thuộc couple_id này hay không
-  const { data: member } = await db
+  const { data: member } = await supabase
     .from('couple_members')
     .select('couple_id')
     .eq('profile_id', user.id)
@@ -45,7 +42,7 @@ export async function GET(request: NextRequest) {
   const pageParam = request.nextUrl.searchParams.get('page');
   const limitParam = request.nextUrl.searchParams.get('limit');
 
-  const query = db
+  const query = supabase
     .from('dates')
     .select('*', { count: 'exact' })
     .eq('couple_id', coupleId)
@@ -106,14 +103,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Dữ liệu không hợp lệ', details: parsed.error.flatten() }, { status: 400 });
   }
 
+  // Sửa S1 (IDOR): Kiểm tra bắt buộc user là thành viên của couple_id trước khi thêm date
+  const { data: member } = await supabase
+    .from('couple_members')
+    .select('couple_id')
+    .eq('profile_id', user.id)
+    .eq('couple_id', parsed.data.couple_id)
+    .maybeSingle();
+
+  if (!member) {
+    return NextResponse.json({ error: 'Không có quyền ghi vào couple này' }, { status: 403 });
+  }
+
   // Remove undefined keys so Supabase uses column defaults
   const insertPayload = Object.fromEntries(
     Object.entries({ ...parsed.data, created_by: user.id }).filter(([, v]) => v !== undefined),
   );
 
-  const db = process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : supabase;
-
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from('dates')
     .insert(insertPayload)
     .select()
@@ -121,9 +128,10 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error('[POST /api/dates]', error);
+    const status = error.code === '42501' ? 403 : 500;
     return NextResponse.json(
       { error: `Không thể tạo buổi hẹn: ${error.message}`, code: error.code, details: error.details },
-      { status: 500 },
+      { status },
     );
   }
 

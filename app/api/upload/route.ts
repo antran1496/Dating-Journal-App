@@ -43,7 +43,42 @@ export async function POST(request: NextRequest) {
       ext = rawExt.match(/^[a-z0-9]+$/) ? rawExt : 'webp';
     }
 
-    const path = `${user.id}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+    let scopedPath: string;
+
+    if (bucket === 'checkin-images') {
+      const coupleId = (formData.get('couple_id') as string) || folder;
+      let verifiedCoupleId: string | null = null;
+
+      if (coupleId && /^[0-9a-f-]{36}$/i.test(coupleId)) {
+        const { data: member } = await supabase
+          .from('couple_members')
+          .select('couple_id')
+          .eq('profile_id', user.id)
+          .eq('couple_id', coupleId)
+          .maybeSingle();
+
+        if (!member) {
+          return NextResponse.json({ error: 'Không có quyền tải ảnh vào couple này' }, { status: 403 });
+        }
+        verifiedCoupleId = member.couple_id;
+      } else {
+        const { data: member } = await supabase
+          .from('couple_members')
+          .select('couple_id')
+          .eq('profile_id', user.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (!member) {
+          return NextResponse.json({ error: 'Bạn cần tạo hoặc tham gia couple trước khi tải ảnh' }, { status: 403 });
+        }
+        verifiedCoupleId = member.couple_id;
+      }
+
+      scopedPath = `${verifiedCoupleId}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+    } else {
+      scopedPath = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+    }
 
     // Chuyển arrayBuffer sang Buffer trong Node.js để upload nhanh và ổn định hơn
     const arrayBuffer = await file.arrayBuffer();
@@ -54,10 +89,10 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await storageClient.storage
       .from(bucket)
-      .upload(path, buffer, {
+      .upload(scopedPath, buffer, {
         upsert: true,
         contentType: file.type || 'image/webp',
-        cacheControl: '31536000', // Cache 1 năm trên CDN & browser để tải trang tức thì
+        cacheControl: '31536000',
       });
 
     if (error) {
@@ -65,12 +100,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const targetPath = data?.path || path;
-    const {
-      data: { publicUrl },
-    } = storageClient.storage.from(bucket).getPublicUrl(targetPath);
+    const targetPath = data?.path || scopedPath;
 
-    return NextResponse.json({ data: { url: publicUrl } });
+    let finalUrl = '';
+    if (bucket === 'avatars') {
+      const {
+        data: { publicUrl },
+      } = storageClient.storage.from(bucket).getPublicUrl(targetPath);
+      finalUrl = publicUrl;
+    } else {
+      // Bucket checkin-images là private: tạo signed URL hợp lệ
+      const { data: signedData, error: signedError } = await storageClient.storage
+        .from(bucket)
+        .createSignedUrl(targetPath, 60 * 60 * 24 * 365); // 1 năm cho backward-compat
+
+      if (signedError || !signedData?.signedUrl) {
+        const {
+          data: { publicUrl },
+        } = storageClient.storage.from(bucket).getPublicUrl(targetPath);
+        finalUrl = publicUrl;
+      } else {
+        finalUrl = signedData.signedUrl;
+      }
+    }
+
+    return NextResponse.json({ data: { url: finalUrl, path: targetPath } });
   } catch (error: any) {
     console.error('[API Upload Exception]', error);
     return NextResponse.json({ error: error.message || 'Lỗi server' }, { status: 500 });
