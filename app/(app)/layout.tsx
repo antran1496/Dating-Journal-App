@@ -38,6 +38,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     }),
   ]);
 
+  if (!profile?.onboarded_at) {
+    redirect('/onboarding');
+  }
+
   const initialLocale: Locale = (preferences?.locale as Locale) ?? 'vi';
 
   return (
