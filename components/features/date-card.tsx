@@ -4,6 +4,7 @@ import { MapPin, Calendar, Trash2, Edit3 } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { RatingStars } from './rating-stars';
+import { SecureImage } from './secure-image';
 import type { DateEntry } from '@/types';
 
 interface DateCardProps {
@@ -22,11 +23,14 @@ function formatDate(dateStr: string | null): string {
 export function DateCard({ date, onDelete, className = '' }: DateCardProps) {
   return (
     <Card hoverable className={`group transition-all duration-200 ${className}`}>
-      {date.checkin_image_url && (
-        <div className="overflow-hidden rounded-t-[var(--radius-lg)]">
-          <img
+      {(date.media?.[0]?.id || date.checkin_image_url) && (
+        <div className="overflow-hidden rounded-t-[var(--radius-lg)] h-40 bg-neutral-100 dark:bg-neutral-900">
+          <SecureImage
+            mediaId={date.media?.[0]?.id}
             src={date.checkin_image_url}
-            alt={date.location_name ?? 'Check-in'}
+            size="thumb"
+            alt={date.title || date.location_name || 'Buổi hẹn'}
+            containerClassName="w-full h-full"
             className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-500"
           />
         </div>

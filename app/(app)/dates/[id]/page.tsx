@@ -25,6 +25,12 @@ export default async function DateDetailPage(props: PageProps<"/dates/[id]">) {
 
   const entry = date as DateEntry;
 
+  const { data: mediaList } = await supabase
+    .from("date_media")
+    .select("*")
+    .eq("date_id", id)
+    .order("position", { ascending: true });
+
   let formattedDate = "";
   if (entry.date_time) {
     const start = new Intl.DateTimeFormat("vi-VN", {
@@ -57,6 +63,18 @@ export default async function DateDetailPage(props: PageProps<"/dates/[id]">) {
       ? [entry.checkin_image_url]
       : [];
 
+  const galleryItems = mediaList && mediaList.length > 0
+    ? mediaList.map((m) => ({
+        id: m.id,
+        kind: m.kind as 'image' | 'video',
+        alt: entry.title || entry.location_name || 'Kỷ niệm',
+      }))
+    : imageUrls.map((url) => ({
+        url,
+        kind: (/\.(mp4|mov|webm)$/i.test(url) ? 'video' : 'image') as 'image' | 'video',
+        alt: entry.title || entry.location_name || 'Kỷ niệm',
+      }));
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -73,7 +91,7 @@ export default async function DateDetailPage(props: PageProps<"/dates/[id]">) {
       </div>
 
       {/* Hero Image / Gallery */}
-      <ImageGallery urls={imageUrls} />
+      <ImageGallery items={galleryItems} />
 
       {/* Header */}
       <div className="mb-6">
