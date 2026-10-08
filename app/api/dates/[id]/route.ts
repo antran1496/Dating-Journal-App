@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth/session';
 import { z } from 'zod';
 
 const updateDateSchema = z.object({
@@ -18,9 +19,9 @@ export async function GET(
   ctx: RouteContext<'/api/dates/[id]'>
 ) {
   const { id } = await ctx.params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+  const supabase = await createClient(user);
 
   const { data, error } = await supabase.from('dates').select('*').eq('id', id).single();
   if (error?.code === 'PGRST116') return NextResponse.json({ error: 'Không tìm thấy' }, { status: 404 });
@@ -34,9 +35,9 @@ export async function PATCH(
   ctx: RouteContext<'/api/dates/[id]'>
 ) {
   const { id } = await ctx.params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+  const supabase = await createClient(user);
 
   let body: unknown;
   try { body = await request.json(); } catch {
@@ -60,9 +61,9 @@ export async function DELETE(
   ctx: RouteContext<'/api/dates/[id]'>
 ) {
   const { id } = await ctx.params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+  const supabase = await createClient(user);
 
   const { error } = await supabase.from('dates').delete().eq('id', id);
   if (error) return NextResponse.json({ error: `Không thể xóa: ${error.message}`, code: error.code }, { status: 500 });

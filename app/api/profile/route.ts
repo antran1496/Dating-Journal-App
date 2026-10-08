@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth/session';
 import { z } from 'zod';
 
 const updateProfileSchema = z.object({
@@ -9,9 +10,9 @@ const updateProfileSchema = z.object({
 });
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+  const supabase = await createClient(user);
 
   const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
   if (error) return NextResponse.json({ error: `Không thể tải profile: ${error.message}`, code: error.code }, { status: 500 });
@@ -20,9 +21,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+  const supabase = await createClient(user);
 
   let body: unknown;
   try { body = await request.json(); } catch {

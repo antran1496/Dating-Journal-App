@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth/session';
 import { generateText, generateWithImage } from '@/lib/ai/gemini';
 import { getNumerologyPrompt } from '@/lib/ai/prompts/numerology';
 import { getZodiacCompatibilityPrompt, getZodiacSign } from '@/lib/ai/prompts/zodiac';
@@ -13,9 +14,9 @@ const readingSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+  const supabase = await createClient(user);
 
   let body: unknown;
   try { body = await request.json(); } catch {

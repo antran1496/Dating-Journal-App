@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentUser } from '@/lib/auth/session';
 import { z } from 'zod';
 
 // Transform empty strings or null to undefined so Postgres doesn't receive "" for timestamp columns
@@ -20,15 +21,9 @@ const createDateSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  let user = null;
-  const { data: { session } } = await supabase.auth.getSession();
-  user = session?.user ?? null;
-  if (!user) {
-    const { data: userData } = await supabase.auth.getUser();
-    user = userData?.user ?? null;
-  }
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+  const supabase = await createClient(user);
 
   const coupleId = request.nextUrl.searchParams.get('couple_id');
   if (!coupleId) return NextResponse.json({ error: 'Thiếu couple_id' }, { status: 400 });
@@ -97,15 +92,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  let user = null;
-  const { data: { session } } = await supabase.auth.getSession();
-  user = session?.user ?? null;
-  if (!user) {
-    const { data: userData } = await supabase.auth.getUser();
-    user = userData?.user ?? null;
-  }
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+  const supabase = await createClient(user);
 
   let body: unknown;
   try { body = await request.json(); } catch {
