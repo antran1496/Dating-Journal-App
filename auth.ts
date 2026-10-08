@@ -4,6 +4,7 @@ import Google from 'next-auth/providers/google';
 import Apple from 'next-auth/providers/apple';
 import { loginSchema } from '@/types/forms';
 import { authenticateWithPassword, RateLimitedError, upsertOAuthUser } from '@/lib/auth/users';
+import { consumeMagicToken } from '@/lib/auth/magic';
 
 class InvalidCredentials extends CredentialsSignin {
   code = 'invalid_credentials';
@@ -33,6 +34,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         ]
       : []),
     Credentials({
+      id: 'credentials',
+      name: 'Password',
       credentials: { email: {}, password: {} },
       async authorize(raw, request) {
         const parsed = loginSchema.safeParse(raw);
@@ -46,6 +49,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (e instanceof RateLimitedError) throw new RateLimited();
           throw e;
         }
+      },
+    }),
+    Credentials({
+      id: 'magic-link',
+      name: 'Magic Link',
+      credentials: { token: {} },
+      async authorize(credentials) {
+        if (!credentials?.token || typeof credentials.token !== 'string') {
+          throw new InvalidCredentials();
+        }
+        const user = await consumeMagicToken(credentials.token);
+        if (!user) throw new InvalidCredentials();
+        return { id: user.id, email: user.email };
       },
     }),
   ],
@@ -79,7 +95,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           emailVerified: profile.email_verified as boolean | string | undefined,
         });
         token.sub = u.id; // ghi đè sub của OAuth bằng UUID nội bộ
-      } else if (account?.provider === 'credentials' && user?.id) {
+      } else if ((account?.provider === 'credentials' || account?.provider === 'magic-link') && user?.id) {
         token.sub = user.id;
       }
       return token;
