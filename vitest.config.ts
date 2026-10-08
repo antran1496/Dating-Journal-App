@@ -15,10 +15,21 @@ export default defineConfig({
   test: {
     projects: [
       {
+        test: {
+          name: 'unit',
+          environment: 'node',
+          include: ['**/*.test.ts', '**/*.test.tsx'],
+          exclude: ['**/*.stories.*', 'node_modules/**'],
+        },
+        resolve: {
+          alias: {
+            '@': path.resolve(dirname, './'),
+          },
+        },
+      },
+      {
         extends: true,
         plugins: [
-          // The plugin will run tests for the stories defined in your Storybook config
-          // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
           storybookTest({ configDir: path.join(dirname, '.storybook') }),
         ],
         test: {
