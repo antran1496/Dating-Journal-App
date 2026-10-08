@@ -29,11 +29,18 @@ cp .env.example .env.local
 ```
 
 Key variables:
-- `AUTH_SECRET`: Random 32-byte string for signing session cookies (`openssl rand -base64 32`)
+- `APP_URL`: Base application URL for invite links, magic links, QR codes
+- `AUTH_SECRET`: Random 32-byte base64 string for signing session cookies (`openssl rand -base64 32`)
 - `AUTH_URL`: Base URL (`http://localhost:3000` for development)
 - `AUTH_GOOGLE_ID` & `AUTH_GOOGLE_SECRET`: Google OAuth credentials
+- `NEXT_PUBLIC_APPLE_ENABLED`: Enable/disable Apple Sign In button (`false` by default)
+- `AUTH_APPLE_ID` & `AUTH_APPLE_SECRET`: Apple Sign In credentials
 - `SUPABASE_JWT_SECRET`: Supabase Legacy JWT Secret used to sign tokens for PostgREST & RLS
 - `SUPABASE_SERVICE_ROLE_KEY`: Service role key for admin operations
+- `RESEND_API_KEY` & `EMAIL_FROM`: Resend credentials for magic link emails
+- `CRON_SECRET`: Bearer secret for background cron endpoints
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`: Web push notification keys
+- `GEMINI_API_KEY`: Google Gemini API key for Cupid and Love Insights
 
 ## Learn More
 
