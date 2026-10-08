@@ -1,5 +1,39 @@
-import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
+import { auth } from '@/auth';
+import {
+  LandingNav,
+  LandingHero,
+  LandingFeatures,
+  LandingPrivacy,
+  LandingSteps,
+  LandingFooter,
+} from '@/components/landing';
 
-export default function HomePage() {
-  redirect('/dashboard');
+export const metadata: Metadata = {
+  title: 'Dating Journal — Không gian riêng của hai đứa',
+  description: 'Ghi lại buổi hẹn trong 10 giây. Riêng tư tuyệt đối, đủ đáng yêu để muốn khoe. Cho cặp đôi 16–25 tuổi.',
+  openGraph: {
+    title: 'Dating Journal — Không gian riêng của hai đứa',
+    description: 'Ghi lại buổi hẹn trong 10 giây. Riêng tư tuyệt đối, đủ đáng yêu để muốn khoe.',
+    type: 'website',
+    locale: 'vi_VN',
+  },
+};
+
+export default async function HomePage() {
+  const session = await auth();
+  const isAuthed = !!session?.user?.id;
+
+  return (
+    <div className="min-h-screen bg-bg text-text flex flex-col font-body antialiased selection:bg-primary/20 selection:text-primary">
+      <LandingNav isAuthed={isAuthed} />
+      <main className="flex-1">
+        <LandingHero isAuthed={isAuthed} />
+        <LandingFeatures />
+        <LandingPrivacy />
+        <LandingSteps />
+      </main>
+      <LandingFooter />
+    </div>
+  );
 }
