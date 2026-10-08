@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { signIn } from 'next-auth/react';
 
 interface GoogleSignInButtonProps {
   label?: string;
@@ -44,20 +44,7 @@ export function GoogleSignInButton({
   const handleClick = async () => {
     setIsLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
-          queryParams: { prompt: 'select_account' },
-        },
-      });
-
-      if (error) {
-        onError?.('Không thể kết nối Google. Vui lòng thử lại');
-        setIsLoading(false);
-      }
-      // On success the browser is redirected to Google — keep the loading state
+      await signIn('google', { callbackUrl: '/dashboard' });
     } catch {
       onError?.('Không thể kết nối Google. Vui lòng thử lại');
       setIsLoading(false);

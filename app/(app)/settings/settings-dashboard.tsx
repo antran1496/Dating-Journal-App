@@ -5,7 +5,9 @@ import { User, Palette, LogOut } from 'lucide-react';
 import type { Profile, CoupleWithMembers } from '@/types';
 import { ProfileClient } from './profile-settings';
 import ThemeSettingsClient from './theme-settings';
-import { createClient } from '@/lib/supabase/client';
+import { signOut } from 'next-auth/react';
+import { useQueryClient } from '@tanstack/react-query';
+import { clearSupabaseTokenCache } from '@/lib/supabase/client';
 import { useLocale } from '@/components/providers/locale-provider';
 
 interface SettingsDashboardProps {
@@ -17,12 +19,14 @@ interface SettingsDashboardProps {
 export function SettingsDashboard({ profile, couple, userId }: SettingsDashboardProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'theme'>('profile');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const supabase = createClient();
+  const queryClient = useQueryClient();
   const { t } = useLocale();
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    await supabase.auth.signOut();
+    queryClient.clear();
+    clearSupabaseTokenCache();
+    await signOut({ redirect: false });
     window.location.href = '/login';
   };
 

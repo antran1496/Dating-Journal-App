@@ -5,31 +5,21 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { signIn } from 'next-auth/react';
 import { loginSchema, type LoginFormValues } from '@/types/forms';
 import { AuthDivider, GoogleSignInButton } from '@/components/features/google-sign-in-button';
 
-const OAUTH_ERROR_MESSAGES: Record<string, string> = {
-  oauth_failed: 'Đăng nhập Google thất bại. Vui lòng thử lại',
-  oauth_missing_code: 'Phiên đăng nhập Google không hợp lệ. Vui lòng thử lại',
-};
-
-function mapOAuthError(errorCode: string | string[] | undefined): string | null {
-  if (typeof errorCode !== 'string') return null;
-  return OAUTH_ERROR_MESSAGES[errorCode] ?? 'Đăng nhập thất bại. Vui lòng thử lại';
+function mapOAuthError(code: string | string[] | undefined): string | null {
+  if (typeof code !== 'string' || !code) return null;
+  if (code === 'AccessDenied') return 'Tài khoản Google chưa xác thực email. Vui lòng thử tài khoản khác';
+  if (code === 'CredentialsSignin') return null; // đã xử lý ở onSubmit
+  return 'Đăng nhập Google thất bại. Vui lòng thử lại';
 }
 
-function mapAuthError(message: string): string {
-  if (message.includes('Invalid login credentials')) {
-    return 'Email hoặc mật khẩu không chính xác';
-  }
-  if (message.includes('Email not confirmed')) {
-    return 'Vui lòng xác thực email trước khi đăng nhập';
-  }
-  if (message.includes('Too many requests') || message.includes('rate limit')) {
-    return 'Bạn đã thử quá nhiều lần. Vui lòng chờ ít phút rồi thử lại';
-  }
-  return message || 'Đăng nhập thất bại. Vui lòng thử lại';
+function mapAuthError(code: string | undefined): string {
+  if (code === 'rate_limited') return 'Bạn đã thử quá nhiều lần. Vui lòng chờ ít phút rồi thử lại';
+  if (code === 'invalid_credentials' || code === 'CredentialsSignin') return 'Email hoặc mật khẩu không chính xác';
+  return 'Đăng nhập thất bại. Vui lòng thử lại';
 }
 
 export default function LoginPage({ searchParams }: PageProps<'/login'>) {
@@ -51,22 +41,22 @@ export default function LoginPage({ searchParams }: PageProps<'/login'>) {
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const res = await signIn('credentials', {
         email: data.email,
         password: data.password,
+        redirect: false,
       });
 
-      if (authError) {
-        setError(mapAuthError(authError.message));
+      if (!res || res.error) {
+        setError(mapAuthError(res?.code ?? res?.error));
         setIsLoading(false);
         return;
       }
 
       // Hard navigation ensures cookies are committed and server components re-render with fresh session on first attempt
       window.location.href = '/dashboard';
-    } catch (err: any) {
-      setError(err?.message || 'Đăng nhập thất bại. Vui lòng thử lại');
+    } catch {
+      setError('Đăng nhập thất bại. Vui lòng thử lại');
       setIsLoading(false);
     }
   };

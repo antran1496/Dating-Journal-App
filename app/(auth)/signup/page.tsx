@@ -5,21 +5,21 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { signIn } from 'next-auth/react';
 import { signupSchema, type SignupFormValues } from '@/types/forms';
 import { AuthDivider, GoogleSignInButton } from '@/components/features/google-sign-in-button';
 
-function mapSignupError(message: string): string {
-  if (message.includes('User already registered') || message.includes('already exists')) {
+function mapSignupError(code: string | undefined): string {
+  if (code === 'email_taken') {
     return 'Email này đã được sử dụng. Vui lòng đăng nhập hoặc dùng email khác';
   }
-  if (message.includes('Password should be at least')) {
-    return 'Mật khẩu phải có ít nhất 6 ký tự';
-  }
-  if (message.includes('Too many requests') || message.includes('rate limit')) {
+  if (code === 'rate_limited') {
     return 'Bạn đã thử quá nhiều lần. Vui lòng chờ ít phút rồi thử lại';
   }
-  return message || 'Đăng ký thất bại. Vui lòng thử lại';
+  if (code === 'invalid_input') {
+    return 'Thông tin không hợp lệ. Mật khẩu từ 6 đến 72 ký tự';
+  }
+  return 'Đăng ký thất bại. Vui lòng thử lại';
 }
 
 export default function SignupPage() {
@@ -39,42 +39,30 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
-      
-      // 1. Sign up the user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        // Picked up by the `handle_new_user` trigger when creating the profile
-        options: { data: { display_name: data.display_name } },
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          display_name: data.display_name,
+          email: data.email,
+          password: data.password,
+        }),
       });
-
-      if (authError) {
-        setError(mapSignupError(authError.message));
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(mapSignupError(json.code));
         setIsLoading(false);
         return;
       }
 
-      if (authData.user) {
-        // 2. Create profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            display_name: data.display_name,
-          });
-          
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-        }
-        
-        // Hard navigation ensures cookies are committed and server components re-render with fresh session on first attempt
-        window.location.href = '/dashboard';
-      } else {
-        setIsLoading(false);
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Đăng ký thất bại. Vui lòng thử lại');
+      const login = await signIn('credentials', {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+      window.location.href = login?.error ? '/login' : '/dashboard';
+    } catch {
+      setError('Đăng ký thất bại. Vui lòng thử lại');
       setIsLoading(false);
     }
   };
