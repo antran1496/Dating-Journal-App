@@ -18,8 +18,11 @@ export const keys = {
     all: () => ['dates'] as const,
     /** Prefix để invalidate mọi query dates của một couple. */
     scope: (coupleId: string) => ['dates', coupleId] as const,
-    /** Infinite query, 20 mục/trang, `select *`. Nguồn duy nhất để seed detail. */
-    list: (coupleId: string) => ['dates', coupleId, 'list'] as const,
+    /** Infinite query, 20 mục/trang, có hỗ trợ search/filter. */
+    list: (coupleId: string, filters?: { search?: string; mood?: string; tag?: string }) =>
+      ['dates', coupleId, 'list', filters || {}] as const,
+    /** Ngày này năm ngoái */
+    onThisDay: (coupleId: string, day?: string) => ['dates', coupleId, 'on-this-day', day || ''] as const,
     /** Toàn bộ dates nhưng chỉ cột nhẹ cho lịch. */
     calendar: (coupleId: string) => ['dates', coupleId, 'calendar'] as const,
     /** 3 mục mới nhất cho dashboard. */

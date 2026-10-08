@@ -9,7 +9,7 @@ import { keys as queryKeys } from '@/lib/query/keys';
 import { DateForm } from '@/components/features/date-form';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { useUpdateDate } from '@/hooks/use-date-mutations';
-import type { DateFormValues } from '@/types/forms';
+import type { CreateDatePayload } from '@/hooks/use-date-mutations';
 
 export default function EditDatePage() {
   const params = useParams();
@@ -21,7 +21,7 @@ export default function EditDatePage() {
 
   const updateMutation = useUpdateDate(date?.couple_id || '');
 
-  const handleSubmit = async (values: DateFormValues & { checkin_image_url?: string }) => {
+  const handleSubmit = async (values: CreateDatePayload) => {
     try {
       await updateMutation.mutateAsync({ id, ...values });
       router.push(`/dates/${id}`);

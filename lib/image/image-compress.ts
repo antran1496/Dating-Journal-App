@@ -135,3 +135,89 @@ export async function compressImage(
     return file;
   }
 }
+
+/**
+ * Tạo ảnh thumbnail kích thước nhỏ (mặc định 480px, chất lượng 0.75) cho preview và proxy nhanh.
+ */
+export async function makeThumbnail(file: File, maxDim = 480, quality = 0.75): Promise<File> {
+  return compressImage(file, maxDim, maxDim, quality);
+}
+
+/**
+ * Trích xuất ảnh poster và thời lượng từ video (HTML5 Video Element)
+ */
+export async function extractVideoPoster(
+  file: File,
+  timeSec = 0.5
+): Promise<{ posterFile: File; duration: number; width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      return reject(new Error('Chỉ hỗ trợ trong môi trường trình duyệt'));
+    }
+
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+
+    const objectUrl = URL.createObjectURL(file);
+    video.src = objectUrl;
+
+    const cleanup = () => {
+      URL.revokeObjectURL(objectUrl);
+      video.remove();
+    };
+
+    video.onloadedmetadata = () => {
+      const duration = video.duration || 0;
+      video.currentTime = Math.min(timeSec, Math.max(0, duration / 2));
+    };
+
+    video.onseeked = () => {
+      try {
+        const width = video.videoWidth || 640;
+        const height = video.videoHeight || 480;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.min(width, 720);
+        canvas.height = Math.round((height * canvas.width) / width);
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          cleanup();
+          return reject(new Error('Không thể tạo canvas'));
+        }
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            cleanup();
+            if (!blob) {
+              return reject(new Error('Không thể tạo ảnh poster từ video'));
+            }
+            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+            const posterFile = new File([blob], `${nameWithoutExt}_poster.webp`, {
+              type: 'image/webp',
+              lastModified: Date.now(),
+            });
+            resolve({
+              posterFile,
+              duration: video.duration || 0,
+              width,
+              height,
+            });
+          },
+          'image/webp',
+          0.8
+        );
+      } catch (err) {
+        cleanup();
+        reject(err);
+      }
+    };
+
+    video.onerror = () => {
+      cleanup();
+      reject(new Error('Không thể đọc file video'));
+    };
+  });
+}

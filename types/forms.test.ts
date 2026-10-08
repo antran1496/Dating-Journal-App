@@ -58,4 +58,12 @@ describe('createDateSchema & dateFormSchema validation', () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it('validates dateFormSchema correctly', () => {
+    const res = dateFormSchema.safeParse({
+      note: 'Đi dạo',
+      rating: 5,
+    });
+    expect(res.success).toBe(true);
+  });
 });

@@ -3,7 +3,7 @@
 import { DateForm } from '@/components/features/date-form';
 import { BackButton } from '@/components/ui/back-button';
 import { createClient } from '@/lib/supabase/client';
-import type { DateFormValues } from '@/types/forms';
+import type { CreateDatePayload } from '@/hooks/use-date-mutations';
 import { useSessionUser } from '@/components/providers/session-provider';
 import { useCreateDate } from '@/hooks/use-date-mutations';
 import { useQuery } from '@tanstack/react-query';
@@ -33,7 +33,7 @@ function NewDateContent() {
 
   const createMutation = useCreateDate(coupleId || '');
 
-  const handleSubmit = async (values: DateFormValues & { checkin_image_url?: string }) => {
+  const handleSubmit = async (values: CreateDatePayload) => {
     if (!coupleId) return;
 
     try {
@@ -58,7 +58,10 @@ function NewDateContent() {
 
       <div className="bg-surface rounded-[var(--radius-lg)] border border-border p-6">
         <DateForm
-          defaultValues={defaultDateParam ? { date_time: defaultDateParam } : undefined}
+          defaultValues={{
+            couple_id: coupleId || '',
+            ...(defaultDateParam ? { date_time: defaultDateParam } : {}),
+          }}
           onSubmit={handleSubmit}
           onCancel={() => router.push('/dates')}
         />

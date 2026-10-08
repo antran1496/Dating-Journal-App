@@ -2,14 +2,25 @@
 
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
-import { useInfiniteDates } from '@/hooks/use-dates';
+import { Loader2, MapPin, Tag } from 'lucide-react';
+import { useInfiniteDates, type DateFilters } from '@/hooks/use-dates';
 import { DatesEmptyState } from '@/components/features/dates-empty-state';
+import { SecureImage } from '@/components/features/secure-image';
 import type { DateEntry } from '@/types';
 
 interface DatesInfiniteListProps {
   coupleId: string;
+  filters?: DateFilters;
 }
+
+const MOOD_EMOJIS: Record<string, string> = {
+  love: '❤️',
+  happy: '😊',
+  calm: '🌿',
+  excited: '✨',
+  tired: '🥱',
+  sad: '🥺',
+};
 
 function formatDate(dateStr: string | null, endDateStr: string | null = null): string {
   if (!dateStr) return 'Chưa ghi nhận';
@@ -31,7 +42,7 @@ function formatDate(dateStr: string | null, endDateStr: string | null = null): s
   return start;
 }
 
-export function DatesInfiniteList({ coupleId }: DatesInfiniteListProps) {
+export function DatesInfiniteList({ coupleId, filters }: DatesInfiniteListProps) {
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   const {
@@ -40,10 +51,9 @@ export function DatesInfiniteList({ coupleId }: DatesInfiniteListProps) {
     hasNextPage,
     isFetchingNextPage,
     isError,
-    isLoading
-  } = useInfiniteDates(coupleId);
+    isLoading,
+  } = useInfiniteDates(coupleId, filters);
 
-  // Tự động load more khi scroll tới cuối trang
   useEffect(() => {
     if (!hasNextPage || isFetchingNextPage) return;
 
@@ -54,7 +64,7 @@ export function DatesInfiniteList({ coupleId }: DatesInfiniteListProps) {
         }
       },
       {
-        rootMargin: '250px', // Bắt đầu load trước khi user cuộn chạm đáy
+        rootMargin: '250px',
         threshold: 0,
       }
     );
@@ -81,45 +91,81 @@ export function DatesInfiniteList({ coupleId }: DatesInfiniteListProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3.5">
       {displayDates.map((date) => {
+        const firstMediaId = date.media?.[0]?.id;
         const thumbnail = date.checkin_image_urls?.[0] ?? date.checkin_image_url;
+        const moodEmoji = date.mood ? MOOD_EMOJIS[date.mood] : null;
+
         return (
           <Link
             key={date.id}
             href={`/dates/${date.id}`}
-            className="group flex rounded-[var(--radius-lg)] bg-surface border border-border hover:border-primary/30 hover:shadow-[var(--shadow-card)] transition-all overflow-hidden p-3 gap-4"
+            className="group flex rounded-[var(--radius-lg)] bg-surface border border-border hover:border-primary/40 hover:shadow-[var(--shadow-card)] transition-all overflow-hidden p-3 gap-3.5"
           >
-            <div className="shrink-0 w-24 h-20 rounded-[var(--radius-md)] overflow-hidden">
-              {thumbnail ? (
-                <img
+            {/* Thumbnail */}
+            <div className="shrink-0 w-24 h-24 sm:w-28 sm:h-24 rounded-[var(--radius-md)] overflow-hidden bg-neutral-100 dark:bg-neutral-900 relative">
+              {firstMediaId || thumbnail ? (
+                <SecureImage
+                  mediaId={firstMediaId}
                   src={thumbnail}
-                  alt={date.location_name ?? ''}
+                  size="thumb"
+                  alt={date.title || date.location_name || 'Kỷ niệm'}
+                  containerClassName="w-full h-full"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-2xl">
-                  📍
+                  {moodEmoji || '💕'}
                 </div>
               )}
             </div>
 
-            <div className="flex flex-col justify-center min-w-0 flex-1">
-              <h3 className="font-semibold text-text truncate mb-0.5">
-                {formatDate(date.date_time ?? date.created_at, date.end_date)}
-              </h3>
-              <p className="text-text-muted text-xs mb-1.5">
-                📍 {date.location_name ?? 'Không có địa điểm'}
-              </p>
+            {/* Content */}
+            <div className="flex flex-col justify-between min-w-0 flex-1 py-0.5">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-xs text-text-muted font-medium">
+                    {formatDate(date.date_time ?? date.created_at, date.end_date)}
+                  </span>
+                  {moodEmoji && (
+                    <span className="text-sm shrink-0" title={`Cảm xúc: ${date.mood}`}>
+                      {moodEmoji}
+                    </span>
+                  )}
+                </div>
 
-              <div className="flex items-center gap-2 mt-auto">
+                <h3 className="font-semibold text-text text-sm sm:text-base leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+                  {date.title || date.location_name || 'Kỷ niệm bên nhau'}
+                </h3>
+
+                {date.note && (
+                  <p className="text-xs text-text-muted line-clamp-1 mt-0.5">{date.note}</p>
+                )}
+              </div>
+
+              {/* Bottom line: location, tags, rating */}
+              <div className="flex items-center justify-between gap-2 mt-2 pt-1 border-t border-border/40 text-[11px] text-text-muted">
+                <div className="flex items-center gap-1.5 truncate">
+                  {date.location_name && (
+                    <span className="flex items-center gap-0.5 truncate">
+                      <MapPin size={11} className="shrink-0 text-primary" />
+                      <span className="truncate">{date.location_name}</span>
+                    </span>
+                  )}
+                  {date.tags && date.tags.length > 0 && (
+                    <span className="truncate text-primary/80 hidden sm:inline">
+                      {date.tags[0]}
+                    </span>
+                  )}
+                </div>
+
                 {date.rating && (
                   <div className="flex gap-0.5 shrink-0">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <span
                         key={i}
-                        className={`text-[10px] ${
+                        className={`text-[9px] ${
                           i < date.rating! ? 'text-primary' : 'text-text-muted opacity-30'
                         }`}
                       >
@@ -128,19 +174,14 @@ export function DatesInfiniteList({ coupleId }: DatesInfiniteListProps) {
                     ))}
                   </div>
                 )}
-                {date.pros && (
-                  <p className="text-xs text-text-muted truncate">• {date.pros}</p>
-                )}
               </div>
             </div>
           </Link>
         );
       })}
 
-      {/* Sentinel element nhận diện cuộn chuột để tự động kích hoạt load more */}
       <div ref={observerRef} className="h-4" />
 
-      {/* Loading indicator khi đang fetch trang tiếp theo */}
       {isFetchingNextPage && (
         <div className="py-4 flex items-center justify-center gap-2 text-text-muted text-sm">
           <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -148,7 +189,6 @@ export function DatesInfiniteList({ coupleId }: DatesInfiniteListProps) {
         </div>
       )}
 
-      {/* Báo lỗi nếu tải thất bại và có nút thử lại */}
       {isError && (
         <div className="py-4 text-center">
           <p className="text-xs text-[var(--color-error)] mb-1.5">
@@ -164,7 +204,6 @@ export function DatesInfiniteList({ coupleId }: DatesInfiniteListProps) {
         </div>
       )}
 
-      {/* Đã tải hết danh sách */}
       {!hasNextPage && displayDates.length > 0 && (
         <div className="py-6 text-center text-xs text-text-muted opacity-70">
           ✨ Đã hiển thị tất cả {displayDates.length} kỷ niệm
