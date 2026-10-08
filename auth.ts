@@ -12,6 +12,7 @@ class RateLimited extends CredentialsSignin {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: process.env.AUTH_SECRET,
   trustHost: true,
   useSecureCookies: process.env.NODE_ENV === 'production', // phải khớp secureCookie trong proxy.ts
   session: { strategy: 'jwt', maxAge: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
