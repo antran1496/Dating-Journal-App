@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from '@/lib/auth/session';
 import { z } from 'zod';
+import crypto from 'node:crypto';
 
 const createCoupleSchema = z.object({
   anniversary_date: z.string().min(1),
@@ -9,8 +10,8 @@ const createCoupleSchema = z.object({
 });
 
 function generateInviteCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  // T0.3: Thay thế Math.random bằng crypto.randomBytes an toàn bảo mật
+  return crypto.randomBytes(4).toString('hex').toUpperCase();
 }
 
 export async function POST(request: NextRequest) {
