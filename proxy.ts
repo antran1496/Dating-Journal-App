@@ -23,7 +23,9 @@ export async function proxy(request: NextRequest) {
   }
   if (isAuthPage && isAuthed) {
     const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
+    const next = request.nextUrl.searchParams.get('next');
+    url.pathname = next || '/dashboard';
+    url.search = '';
     return NextResponse.redirect(url);
   }
   return NextResponse.next();
