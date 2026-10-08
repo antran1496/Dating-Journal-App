@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentUser } from '@/lib/auth/session';
 import { z } from 'zod';
 
 const joinSchema = z.object({
@@ -8,10 +9,9 @@ const joinSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+  const supabase = await createClient(user);
 
   // Kiểm tra đã có couple chưa
   const { data: existing } = await supabase

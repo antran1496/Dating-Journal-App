@@ -20,6 +20,21 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in the values:
+
+```bash
+cp .env.example .env.local
+```
+
+Key variables:
+- `AUTH_SECRET`: Random 32-byte string for signing session cookies (`openssl rand -base64 32`)
+- `AUTH_URL`: Base URL (`http://localhost:3000` for development)
+- `AUTH_GOOGLE_ID` & `AUTH_GOOGLE_SECRET`: Google OAuth credentials
+- `SUPABASE_JWT_SECRET`: Supabase Legacy JWT Secret used to sign tokens for PostgREST & RLS
+- `SUPABASE_SERVICE_ROLE_KEY`: Service role key for admin operations
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

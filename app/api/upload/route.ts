@@ -1,21 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentUser } from '@/lib/auth/session';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    
-    // Sử dụng getSession() để giải mã token từ cookie mà không tốn 1 roundtrip network sang Supabase Auth
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-    const user = session?.user;
-
-    if (sessionError || !user) {
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     }
+
+    const supabase = await createClient(user);
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;

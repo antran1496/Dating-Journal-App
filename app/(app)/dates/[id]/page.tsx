@@ -1,7 +1,7 @@
 import { DeleteDateButton } from "@/components/features/delete-date-button";
 import { ImageGallery } from "@/components/features/image-gallery";
 import { BackButton } from "@/components/ui/back-button";
-import { getCurrentUser } from "@/lib/supabase/auth";
+import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type { DateEntry } from "@/types";
 import { Calendar, Edit3 } from "lucide-react";
@@ -13,7 +13,7 @@ export default async function DateDetailPage(props: PageProps<"/dates/[id]">) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const supabase = await createClient();
+  const supabase = await createClient(user);
 
   const { data: date, error } = await supabase
     .from("dates")

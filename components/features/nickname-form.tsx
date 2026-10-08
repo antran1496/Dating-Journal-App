@@ -14,6 +14,7 @@ import type { Profile } from '@/types';
 
 import { useToast } from '@/components/ui/toast';
 import { useLocale } from '@/components/providers/locale-provider';
+import { useSessionUser } from '@/components/providers/session-provider';
 
 interface NicknameFormProps {
   partner: Profile;
@@ -25,6 +26,7 @@ interface NicknameFormProps {
 export function NicknameForm({ partner, currentNickname, coupleId, onSuccess }: NicknameFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useSessionUser();
   const queryClient = useQueryClient();
   const supabase = createClient();
   const { toast } = useToast();
@@ -40,8 +42,7 @@ export function NicknameForm({ partner, currentNickname, coupleId, onSuccess }: 
     setError(null);
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      if (authError || !authData?.user) {
+      if (!user) {
         const msg = 'Chưa đăng nhập hoặc phiên làm việc đã hết hạn';
         setError(msg);
         toast({ type: 'error', title: msg });
