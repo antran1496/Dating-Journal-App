@@ -1,15 +1,15 @@
 'use client';
 
 import React, { createContext, useContext } from 'react';
-import { User } from '@supabase/supabase-js';
+import type { AppUser } from '@/types/auth';
 
-const SessionContext = createContext<{ user: User | null }>({ user: null });
+const SessionContext = createContext<{ user: AppUser | null }>({ user: null });
 
 export function SessionProvider({
   user,
   children,
 }: {
-  user: User | null;
+  user: AppUser | null;
   children: React.ReactNode;
 }) {
   return (

@@ -1,6 +1,6 @@
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
-import { getCurrentUser } from '@/lib/supabase/auth';
+import { getCurrentUser } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/layouts/app-sidebar';
 import { ThemeApplier } from '@/components/providers/theme-applier';
@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await getCurrentUser();
   if (!user) redirect('/login');
   
-  const supabase = await createClient();
+  const supabase = await createClient(user);
   const queryClient = getServerQueryClient();
 
   // Fetch profile, preferences, and couple in parallel

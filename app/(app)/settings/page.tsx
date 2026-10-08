@@ -1,6 +1,6 @@
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
-import { getCurrentUser } from '@/lib/supabase/auth';
+import { getCurrentUser } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { SettingsDashboard } from './settings-dashboard';
 import type { Profile, CoupleWithMembers } from '@/types';
@@ -13,7 +13,7 @@ export default async function SettingsPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
   
-  const supabase = await createClient();
+  const supabase = await createClient(user);
 
   const { data: profile } = await supabase
     .from('profiles')
