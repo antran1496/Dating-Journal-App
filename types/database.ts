@@ -30,14 +30,25 @@ export type CoupleMember = {
   left_at?: string | null;
 };
 
+export type DateMood = 'love' | 'happy' | 'calm' | 'excited' | 'tired' | 'sad';
+
 export type DateEntry = {
   id: string;
   couple_id: string;
+  title?: string | null;
+  note?: string | null;
+  mood?: DateMood | null;
   date_time: string | null;
   end_date: string | null;
   location_name: string | null;
   location_lat: number | null;
   location_lng: number | null;
+  spend_vnd?: number | null;
+  paid_by?: string | null;
+  paid_split?: boolean;
+  song?: string | null;
+  tags?: string[];
+  client_id?: string | null;
   checkin_image_url: string | null;
   checkin_image_urls: string[] | null;
   pros: string | null;
@@ -45,6 +56,35 @@ export type DateEntry = {
   wish_next_time: string | null;
   rating: number | null;
   created_by: string;
+  created_at: string;
+  updated_at?: string;
+  places?: DatePlace[];
+  media?: DateMedia[];
+};
+
+export type DatePlace = {
+  id: string;
+  date_id: string;
+  position: number;
+  name: string;
+  lat: number | null;
+  lng: number | null;
+  area_label?: string | null;
+};
+
+export type DateMedia = {
+  id: string;
+  date_id: string;
+  couple_id: string;
+  kind: 'image' | 'video';
+  path: string;
+  thumb_path?: string | null;
+  width?: number | null;
+  height?: number | null;
+  duration_s?: number | null;
+  bytes?: number | null;
+  position: number;
+  created_by?: string | null;
   created_at: string;
 };
 
