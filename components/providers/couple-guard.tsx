@@ -16,14 +16,16 @@ export function CoupleGuard({
   const pathname = usePathname();
   const isClient = useIsClient();
 
+  const isCoupleSetupRoute = pathname.startsWith('/couple');
+
   useEffect(() => {
     if (!isClient) return;
-    if (!couple && pathname !== '/onboarding') {
-      router.replace('/onboarding');
+    if (!couple && !isCoupleSetupRoute) {
+      router.replace('/couple/setup');
     }
-  }, [couple, pathname, router, isClient]);
+  }, [couple, isCoupleSetupRoute, router, isClient]);
 
-  if (!couple && pathname !== '/onboarding') {
+  if (!couple && !isCoupleSetupRoute) {
     return null; // Return null to prevent flicker
   }
 

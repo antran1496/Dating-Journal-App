@@ -3,10 +3,18 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from '@/lib/auth/session';
 import { z } from 'zod';
 import crypto from 'node:crypto';
+import { todayVN } from '@/lib/time';
 
 const createCoupleSchema = z.object({
-  anniversary_date: z.string().min(1),
-  relationship_status: z.enum(['talking', 'dating', 'official', 'engaged', 'married']).default('dating'),
+  anniversary_date: z
+    .string()
+    .min(1, 'Vui lòng chọn ngày bắt đầu yêu')
+    .refine((date) => date <= todayVN(), {
+      message: 'Ngày bắt đầu yêu không thể ở tương lai',
+    }),
+  relationship_status: z
+    .enum(['talking', 'dating', 'official', 'engaged', 'married'])
+    .default('official'),
 });
 
 function generateInviteCode(): string {
