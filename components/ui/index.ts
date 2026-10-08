@@ -9,3 +9,8 @@ export * from './toast';
 export * from './loading-skeleton';
 export * from './empty-state';
 export * from './confirm-modal';
+export * from './bottom-sheet';
+export * from './segmented-tabs';
+export * from './switch';
+export * from './progress';
+export * from './chip';
