@@ -3,6 +3,9 @@ export type Profile = {
   display_name: string | null;
   avatar_url: string | null;
   birth_date: string | null;
+  onboarded_at?: string | null;
+  consent_at?: string | null;
+  consent_version?: string | null;
   created_at: string;
 };
 
@@ -11,6 +14,10 @@ export type Couple = {
   invite_code: string;
   anniversary_date: string | null;
   relationship_status: 'talking' | 'dating' | 'official' | 'engaged' | 'married';
+  timezone?: string;
+  monthly_budget_vnd?: number | null;
+  dissolved_at?: string | null;
+  purge_after?: string | null;
   created_by: string;
   created_at: string;
 };
@@ -20,6 +27,7 @@ export type CoupleMember = {
   profile_id: string;
   nickname: string | null;
   role: string;
+  left_at?: string | null;
 };
 
 export type DateEntry = {
@@ -88,3 +96,11 @@ export type AiChatMessage = {
   content: string;
   created_at: string;
 };
+
+export type UsageCounter = {
+  scope: string;
+  feature: string;
+  day: string;
+  count: number;
+};
+
