@@ -49,7 +49,7 @@ export function useCreateDate(coupleId: string) {
     onSuccess: (newData) => {
       // Phase 5: Cập nhật cache ngay lập tức thay vì đợi refresh
       // Update the infinite dates
-      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: any) => {
+      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: { pages?: DateEntry[][] } | undefined) => {
         if (!oldData || !oldData.pages || oldData.pages.length === 0) return oldData;
         const newPages = [...oldData.pages];
         newPages[0] = [newData, ...newPages[0]];
@@ -81,7 +81,7 @@ export function useUpdateDate(coupleId: string) {
     },
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.dates.detail(updated.id), updated);
-      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: any) => {
+      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: { pages?: DateEntry[][] } | undefined) => {
         if (!oldData || !oldData.pages) return oldData;
         return {
           ...oldData,
@@ -107,7 +107,7 @@ export function useDeleteDate(coupleId: string) {
     },
     onSuccess: (deletedId) => {
       queryClient.removeQueries({ queryKey: queryKeys.dates.detail(deletedId) });
-      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: any) => {
+      queryClient.setQueryData(queryKeys.dates.list(coupleId), (oldData: { pages?: DateEntry[][] } | undefined) => {
         if (!oldData || !oldData.pages) return oldData;
         return {
           ...oldData,

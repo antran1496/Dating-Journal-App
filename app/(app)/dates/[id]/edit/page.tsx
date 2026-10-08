@@ -25,8 +25,9 @@ export default function EditDatePage() {
     try {
       await updateMutation.mutateAsync({ id, ...values });
       router.push(`/dates/${id}`);
-    } catch (err: any) {
-      throw new Error(err.message || 'Không thể cập nhật');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Không thể cập nhật';
+      throw new Error(msg);
     }
   };
 

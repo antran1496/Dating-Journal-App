@@ -51,8 +51,8 @@ const ThemeProviderContext = React.createContext<ThemeContextValue>({
   setTheme: () => null,
   primaryColor: '#ff6b81',
   setPrimaryColor: () => null,
-  fontHeading: 'Playfair Display',
-  fontBody: 'Inter',
+  fontHeading: 'Be Vietnam Pro',
+  fontBody: 'Be Vietnam Pro',
   setFontPair: () => null,
 });
 
@@ -82,8 +82,13 @@ function applyColorPalette(primaryHex: string) {
 
 function applyFontPair(heading: string, body: string) {
   const root = document.documentElement;
-  root.style.setProperty('--font-heading', `"${heading}", serif`);
-  root.style.setProperty('--font-body', `"${body}", sans-serif`);
+  if (heading === 'Be Vietnam Pro') {
+    root.style.setProperty('--font-heading', 'var(--font-be-vietnam), sans-serif');
+    root.style.setProperty('--font-body', 'var(--font-be-vietnam), sans-serif');
+  } else {
+    root.style.setProperty('--font-heading', `"${heading}", serif`);
+    root.style.setProperty('--font-body', `"${body}", sans-serif`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -103,10 +108,10 @@ export function ThemeProvider({
     initialPreferences?.primary_color ?? '#ff6b81'
   );
   const [fontHeading, setFontHeading] = React.useState(
-    initialPreferences?.font_heading ?? 'Playfair Display'
+    initialPreferences?.font_heading ?? 'Be Vietnam Pro'
   );
   const [fontBody, setFontBody] = React.useState(
-    initialPreferences?.font_body ?? 'Inter'
+    initialPreferences?.font_body ?? 'Be Vietnam Pro'
   );
 
   // ---- Theme mode effect ----

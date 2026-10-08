@@ -128,9 +128,9 @@ export function MultiImageUpload({
               return prev.filter((p) => p.id !== item.id);
             });
           })
-          .catch((err: any) => {
+          .catch((err: unknown) => {
             console.error('[MultiImageUpload Error]', err);
-            const errMsg = err?.message || 'Tải ảnh thất bại';
+            const errMsg = err instanceof Error ? err.message : 'Tải ảnh thất bại';
             setPending((prev) =>
               prev.map((p) =>
                 p.id === item.id ? { ...p, status: 'error', error: errMsg } : p

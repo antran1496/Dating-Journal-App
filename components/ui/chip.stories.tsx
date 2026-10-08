@@ -29,7 +29,6 @@ export const MoodSelector: Story = {
     label: 'Tâm trạng',
   },
   render: () => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const [selectedMood, setSelectedMood] = useState('love');
     const moods = [
       { id: 'love', label: 'Yêu thương', icon: '💖' },

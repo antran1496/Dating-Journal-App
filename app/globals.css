@@ -31,8 +31,8 @@
   --color-warning-fg: #ffffff;
   
   /* Typography */
-  --font-heading: var(--font-playfair);
-  --font-body: var(--font-inter);
+  --font-heading: var(--font-be-vietnam), sans-serif;
+  --font-body: var(--font-be-vietnam), sans-serif;
   
   /* Shape */
   --radius-sm: 8px;

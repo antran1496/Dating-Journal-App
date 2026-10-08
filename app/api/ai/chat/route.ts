@@ -79,16 +79,26 @@ export async function POST(request: NextRequest) {
     .limit(20);
 
   // Build context
-  const couple = memberData?.couple as any;
+  const coupleRaw = Array.isArray(memberData?.couple) ? memberData?.couple[0] : memberData?.couple;
+  const couple = coupleRaw as {
+    anniversary_date?: string | null;
+    relationship_status?: string | null;
+    couple_members?: Array<{ profile?: { display_name?: string } | Array<{ display_name?: string }> }>;
+  } | null;
+
   const members = couple?.couple_members ?? [];
-  const partner = members.find((m: any) => m.profile?.display_name !== profile?.display_name);
+  const partner = members.find((m) => {
+    const p = Array.isArray(m.profile) ? m.profile[0] : m.profile;
+    return p?.display_name !== profile?.display_name;
+  });
+  const partnerProfile = Array.isArray(partner?.profile) ? partner?.profile[0] : partner?.profile;
 
   const systemPrompt = getChatSystemPrompt({
     displayName: profile?.display_name ?? 'Bạn',
-    partnerName: partner?.profile?.display_name,
+    partnerName: partnerProfile?.display_name,
     recentDates: recentDates ?? [],
-    anniversaryDate: couple?.anniversary_date,
-    relationshipStatus: couple?.relationship_status,
+    anniversaryDate: couple?.anniversary_date ?? undefined,
+    relationshipStatus: couple?.relationship_status ?? undefined,
   });
 
   // Build conversation string for single-turn (simpler than chat API)

@@ -100,8 +100,9 @@ export async function POST(request: NextRequest) {
       let palmResult: string;
       try {
         palmResult = await generateWithImage(system, imageBase64, mimeType);
-      } catch (e: any) {
-        console.error('[POST /api/ai/reading] Palm AI error:', e?.status || e?.message || e);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error('[POST /api/ai/reading] Palm AI error:', msg);
         return NextResponse.json({ error: 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại!' }, { status: 503 });
       }
       // Save to DB (without the huge base64 in input_data)

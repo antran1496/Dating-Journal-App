@@ -68,9 +68,9 @@ export function NicknameForm({ partner, currentNickname, coupleId, onSuccess }: 
       await queryClient.invalidateQueries({ queryKey: ['couple'] });
       toast({ type: 'success', title: t('toast.nicknameSaved') });
       onSuccess?.(values.nickname);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Submit Nickname Exception:', err);
-      const errMsg = err?.message || 'Đã xảy ra lỗi không xác định';
+      const errMsg = err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định';
       setError(errMsg);
       toast({ type: 'error', title: errMsg });
     } finally {

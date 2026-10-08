@@ -40,8 +40,9 @@ function NewDateContent() {
       await createMutation.mutateAsync(values);
       router.push('/dates');
       router.refresh();
-    } catch (err: any) {
-      throw new Error(err.message || 'Không thể tạo buổi hẹn');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Không thể tạo buổi hẹn';
+      throw new Error(msg);
     }
   };
 

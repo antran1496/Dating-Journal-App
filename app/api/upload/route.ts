@@ -125,8 +125,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ data: { url: finalUrl, path: targetPath } });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API Upload Exception]', error);
-    return NextResponse.json({ error: error.message || 'Lỗi server' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : 'Lỗi server';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

@@ -124,11 +124,20 @@ export interface FontPair {
 
 export const FONT_PAIRS: FontPair[] = [
   {
+    id: 'default',
+    name: 'Be Vietnam Pro',
+    heading: 'Be Vietnam Pro',
+    body: 'Be Vietnam Pro',
+    googleFontsQuery: '', // Đã nạp sẵn bằng next/font
+    sampleHeading: 'Câu chuyện tình yêu',
+    sampleBody: 'Mỗi ngày bên nhau là một kỷ niệm đáng nhớ.',
+  },
+  {
     id: 'classic',
     name: 'Cổ điển',
     heading: 'Playfair Display',
     body: 'Inter',
-    googleFontsQuery: '', // Already loaded via next/font
+    googleFontsQuery: 'family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@400;500;600;700',
     sampleHeading: 'Câu chuyện tình yêu',
     sampleBody: 'Mỗi ngày bên nhau là một kỷ niệm đáng nhớ.',
   },
@@ -194,8 +203,8 @@ export function getDefaultPreferences(): Omit<UserPreferences, 'profile_id'> {
   return {
     theme_mode: 'system',
     primary_color: '#ff6b81',
-    font_heading: 'Playfair Display',
-    font_body: 'Inter',
+    font_heading: 'Be Vietnam Pro',
+    font_body: 'Be Vietnam Pro',
     locale: 'vi',
   };
 }

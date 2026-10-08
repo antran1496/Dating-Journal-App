@@ -45,9 +45,9 @@ export async function uploadImage(file: File, options: UploadOptions): Promise<s
     }
 
     return json.data.url;
-  } catch (err: any) {
+  } catch (err: unknown) {
     clearTimeout(id);
-    if (err.name === 'AbortError') {
+    if (err instanceof Error && err.name === 'AbortError') {
       throw new Error('Đã quá hạn thời gian tải ảnh lên (Timeout)');
     }
     throw err;

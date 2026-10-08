@@ -139,9 +139,10 @@ export default function InsightsPage() {
         });
         toast({ type: 'success', title: 'Đã tạo luận giải thành công! ✨' });
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      toast({ type: 'error', title: e?.message || 'Không thể tạo luận giải. Vui lòng thử lại!' });
+      const msg = e instanceof Error ? e.message : 'Không thể tạo luận giải. Vui lòng thử lại!';
+      toast({ type: 'error', title: msg });
     } finally {
       setIsGenerating(false);
     }

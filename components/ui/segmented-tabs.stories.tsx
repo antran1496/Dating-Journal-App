@@ -34,7 +34,6 @@ export const Default: Story = {
     onChange: fn(),
   },
   render: () => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const [selected, setSelected] = useState('dates');
     return (
       <SegmentedTabs
@@ -60,7 +59,6 @@ export const WithIcons: Story = {
     onChange: fn(),
   },
   render: () => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const [selected, setSelected] = useState('heart');
     return (
       <SegmentedTabs

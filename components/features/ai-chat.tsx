@@ -59,9 +59,10 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
     try {
       const newSessionId = await onSendMessage(userText, currentSessionId);
       if (!currentSessionId) setCurrentSessionId(newSessionId);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to send message:', err);
-      setError(err?.message || 'Không thể nhận phản hồi từ Cupid lúc này. Vui lòng thử lại!');
+      const msg = err instanceof Error ? err.message : 'Không thể nhận phản hồi từ Cupid lúc này. Vui lòng thử lại!';
+      setError(msg);
     } finally {
       setIsTyping(false);
     }

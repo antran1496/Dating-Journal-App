@@ -60,9 +60,9 @@ export function ImageUpload({
     try {
       const publicUrl = await uploadImage(file, { bucket, folder });
       onChange(publicUrl);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[ImageUpload Exception]:', err);
-      const errMsg = err?.message || 'Đã xảy ra lỗi khi tải ảnh lên. Vui lòng thử lại!';
+      const errMsg = err instanceof Error ? err.message : 'Đã xảy ra lỗi khi tải ảnh lên. Vui lòng thử lại!';
       setError(errMsg);
       toast({ type: 'error', title: errMsg });
     } finally {

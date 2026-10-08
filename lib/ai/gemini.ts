@@ -6,16 +6,16 @@ const FALLBACK_MODELS = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.5-fla
 
 async function generateWithModelFallback(params: {
   systemInstruction?: string;
-  contents: any;
+  contents: unknown;
   maxOutputTokens?: number;
   temperature?: number;
 }): Promise<string> {
-  let lastError: any = null;
+  let lastError: unknown = null;
   for (const model of FALLBACK_MODELS) {
     try {
       const response = await ai.models.generateContent({
         model,
-        contents: params.contents,
+        contents: params.contents as string,
         config: {
           systemInstruction: params.systemInstruction,
           maxOutputTokens: params.maxOutputTokens ?? 2048,
@@ -25,8 +25,9 @@ async function generateWithModelFallback(params: {
       if (response.text !== undefined && response.text !== null) {
         return response.text;
       }
-    } catch (err: any) {
-      console.warn(`[Gemini] Model ${model} failed (${err?.status || err?.message}), trying fallback...`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[Gemini] Model ${model} failed (${msg}), trying fallback...`);
       lastError = err;
     }
   }
@@ -47,7 +48,7 @@ export async function chatWithHistory(
   history: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>,
   userMessage: string
 ): Promise<string> {
-  let lastError: any = null;
+  let lastError: unknown = null;
   for (const model of FALLBACK_MODELS) {
     try {
       const chat = ai.chats.create({
@@ -61,7 +62,7 @@ export async function chatWithHistory(
       });
       const response = await chat.sendMessage({ message: userMessage });
       if (response.text) return response.text;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn(`[Gemini chatWithHistory] Model ${model} failed, trying fallback...`);
       lastError = err;
     }

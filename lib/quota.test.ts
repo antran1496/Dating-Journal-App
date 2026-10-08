@@ -9,7 +9,7 @@ describe('lib/quota (Quota management)', () => {
     vi.clearAllMocks();
     vi.spyOn(adminModule, 'createAdminClient').mockReturnValue({
       rpc: mockRpc,
-    } as any);
+    } as unknown as ReturnType<typeof adminModule.createAdminClient>);
   });
 
   it('returns ok: true when consume_quota RPC succeeds', async () => {

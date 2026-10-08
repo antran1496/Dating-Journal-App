@@ -27,7 +27,6 @@ export const Interactive: Story = {
     children: null,
   },
   render: () => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const [open, setOpen] = useState(false);
     return (
       <div className="p-8">
