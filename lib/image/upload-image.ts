@@ -44,7 +44,7 @@ export async function uploadImage(file: File, options: UploadOptions): Promise<s
       throw new Error(json.error || 'Tải ảnh thất bại, vui lòng thử lại');
     }
 
-    return json.data.url;
+    return json.data.url || json.data.path;
   } catch (err: unknown) {
     clearTimeout(id);
     if (err instanceof Error && err.name === 'AbortError') {

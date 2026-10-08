@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentUser } from '@/lib/auth/session';
+import { detectMedia } from '@/lib/media/detect';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,121 +11,163 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     }
 
-    const supabase = await createClient(user);
-
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    const bucket = formData.get('bucket') as string;
-    const folder = formData.get('folder') as string;
+    const rawKind = (formData.get('kind') as string | null)?.toLowerCase();
+    const bucket = formData.get('bucket') as string | null;
+    const rawDateId = formData.get('date_id') as string | null;
+    const rawCoupleId = (formData.get('couple_id') as string | null) || (bucket === 'checkin-images' ? (formData.get('folder') as string | null) : null);
+    
+    // Optional client-measured dimensions/duration
+    const formWidth = formData.get('width') ? Number(formData.get('width')) : undefined;
+    const formHeight = formData.get('height') ? Number(formData.get('height')) : undefined;
+    const formDuration = formData.get('duration_s') ? Number(formData.get('duration_s')) : (formData.get('duration_sec') ? Number(formData.get('duration_sec')) : undefined);
 
-    if (!file || !bucket || !folder) {
-      return NextResponse.json({ error: 'Thiếu tham số bắt buộc' }, { status: 400 });
+    if (!file) {
+      return NextResponse.json({ error: 'Thiếu file tải lên' }, { status: 400 });
     }
 
-    if (bucket !== 'avatars' && bucket !== 'checkin-images') {
-      return NextResponse.json({ error: 'Bucket không hợp lệ' }, { status: 400 });
-    }
+    // Determine target kind: 'avatar' | 'image' | 'video'
+    const isAvatar = rawKind === 'avatar' || bucket === 'avatars';
 
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Chỉ hỗ trợ file ảnh' }, { status: 400 });
-    }
-
-    if (file.size > 20 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Kích thước ảnh quá lớn (tối đa 20MB)' }, { status: 400 });
-    }
-
-    // Xác định phần mở rộng file chuẩn xác
-    let ext = 'webp';
-    if (file.type === 'image/jpeg') ext = 'jpg';
-    else if (file.type === 'image/png') ext = 'png';
-    else if (file.type === 'image/webp') ext = 'webp';
-    else {
-      const rawExt = file.name.split('.').pop()?.toLowerCase() || 'webp';
-      ext = rawExt.match(/^[a-z0-9]+$/) ? rawExt : 'webp';
-    }
-
-    let scopedPath: string;
-
-    if (bucket === 'checkin-images') {
-      const coupleId = (formData.get('couple_id') as string) || folder;
-      let verifiedCoupleId: string | null = null;
-
-      if (coupleId && /^[0-9a-f-]{36}$/i.test(coupleId)) {
-        const { data: member } = await supabase
-          .from('couple_members')
-          .select('couple_id')
-          .eq('profile_id', user.id)
-          .eq('couple_id', coupleId)
-          .maybeSingle();
-
-        if (!member) {
-          return NextResponse.json({ error: 'Không có quyền tải ảnh vào couple này' }, { status: 403 });
-        }
-        verifiedCoupleId = member.couple_id;
-      } else {
-        const { data: member } = await supabase
-          .from('couple_members')
-          .select('couple_id')
-          .eq('profile_id', user.id)
-          .limit(1)
-          .maybeSingle();
-
-        if (!member) {
-          return NextResponse.json({ error: 'Bạn cần tạo hoặc tham gia couple trước khi tải ảnh' }, { status: 403 });
-        }
-        verifiedCoupleId = member.couple_id;
-      }
-
-      scopedPath = `${verifiedCoupleId}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-    } else {
-      scopedPath = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-    }
-
-    // Chuyển arrayBuffer sang Buffer trong Node.js để upload nhanh và ổn định hơn
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Ưu tiên Admin Client (nếu có service key) để bypass RLS lock trên Postgres, tăng tốc độ lưu trữ
-    const storageClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : supabase;
-
-    const { data, error } = await storageClient.storage
-      .from(bucket)
-      .upload(scopedPath, buffer, {
-        upsert: true,
-        contentType: file.type || 'image/webp',
-        cacheControl: '31536000',
-      });
-
-    if (error) {
-      console.error('[API Upload Error]', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    // Verify magic bytes
+    const detected = detectMedia(buffer);
+    if (!detected) {
+      return NextResponse.json(
+        { error: 'Định dạng file không được hỗ trợ hoặc file bị hỏng' },
+        { status: 400 }
+      );
     }
 
-    const targetPath = data?.path || scopedPath;
+    const adminClient = createAdminClient();
 
-    let finalUrl = '';
-    if (bucket === 'avatars') {
+    // 1. Avatar upload (public bucket 'avatars')
+    if (isAvatar) {
+      if (detected.kind !== 'image' || !['jpg', 'png', 'webp'].includes(detected.ext)) {
+        return NextResponse.json(
+          { error: 'Avatar chỉ hỗ trợ định dạng ảnh JPEG, PNG hoặc WebP' },
+          { status: 400 }
+        );
+      }
+      if (buffer.length > 20 * 1024 * 1024) {
+        return NextResponse.json({ error: 'Kích thước ảnh avatar tối đa 20MB' }, { status: 400 });
+      }
+
+      const scopedPath = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${detected.ext}`;
+      const { error: uploadError } = await adminClient.storage
+        .from('avatars')
+        .upload(scopedPath, buffer, {
+          contentType: detected.mime,
+          upsert: true,
+          cacheControl: '31536000',
+        });
+
+      if (uploadError) {
+        console.error('[API Upload Avatar Error]', uploadError);
+        return NextResponse.json({ error: uploadError.message }, { status: 500 });
+      }
+
       const {
         data: { publicUrl },
-      } = storageClient.storage.from(bucket).getPublicUrl(targetPath);
-      finalUrl = publicUrl;
-    } else {
-      // Bucket checkin-images là private: tạo signed URL hợp lệ
-      const { data: signedData, error: signedError } = await storageClient.storage
-        .from(bucket)
-        .createSignedUrl(targetPath, 60 * 60 * 24 * 365); // 1 năm cho backward-compat
+      } = adminClient.storage.from('avatars').getPublicUrl(scopedPath);
 
-      if (signedError || !signedData?.signedUrl) {
-        const {
-          data: { publicUrl },
-        } = storageClient.storage.from(bucket).getPublicUrl(targetPath);
-        finalUrl = publicUrl;
-      } else {
-        finalUrl = signedData.signedUrl;
+      return NextResponse.json({
+        data: {
+          url: publicUrl,
+          path: scopedPath,
+          kind: 'avatar',
+          width: detected.width ?? formWidth ?? null,
+          height: detected.height ?? formHeight ?? null,
+          bytes: buffer.length,
+        },
+      });
+    }
+
+    // 2. Private media upload (bucket 'checkin-images')
+    const supabase = await createClient(user);
+    let coupleId: string | null = null;
+
+    if (rawCoupleId && /^[0-9a-f-]{36}$/i.test(rawCoupleId)) {
+      const { data: member } = await supabase
+        .from('couple_members')
+        .select('couple_id')
+        .eq('profile_id', user.id)
+        .eq('couple_id', rawCoupleId)
+        .maybeSingle();
+
+      if (!member) {
+        return NextResponse.json({ error: 'Bạn không thuộc couple này' }, { status: 403 });
+      }
+      coupleId = member.couple_id;
+    } else {
+      const { data: member } = await supabase
+        .from('couple_members')
+        .select('couple_id')
+        .eq('profile_id', user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!member) {
+        return NextResponse.json(
+          { error: 'Bạn cần tạo hoặc tham gia couple trước khi tải ảnh' },
+          { status: 403 }
+        );
+      }
+      coupleId = member.couple_id;
+    }
+
+    // Validate size and duration limits
+    if (detected.kind === 'video') {
+      if (buffer.length > 50 * 1024 * 1024) {
+        return NextResponse.json(
+          { error: 'Kích thước video quá lớn (tối đa 50MB)' },
+          { status: 400 }
+        );
+      }
+      if (formDuration !== undefined && formDuration > 35) {
+        return NextResponse.json(
+          { error: 'Thời lượng video tối đa 30 giây' },
+          { status: 400 }
+        );
+      }
+    } else {
+      if (buffer.length > 20 * 1024 * 1024) {
+        return NextResponse.json(
+          { error: 'Kích thước ảnh quá lớn (tối đa 20MB)' },
+          { status: 400 }
+        );
       }
     }
 
-    return NextResponse.json({ data: { url: finalUrl, path: targetPath } });
+    const folderName = rawDateId && /^[0-9a-f-]{36}$/i.test(rawDateId) ? rawDateId : 'drafts';
+    const scopedPath = `${coupleId}/${folderName}/${crypto.randomUUID()}.${detected.ext}`;
+
+    const { error: uploadError } = await adminClient.storage
+      .from('checkin-images')
+      .upload(scopedPath, buffer, {
+        contentType: detected.mime,
+        upsert: false,
+        cacheControl: '31536000',
+      });
+
+    if (uploadError) {
+      console.error('[API Upload Checkin Media Error]', uploadError);
+      return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      data: {
+        path: scopedPath,
+        kind: detected.kind,
+        width: detected.width ?? formWidth ?? null,
+        height: detected.height ?? formHeight ?? null,
+        bytes: buffer.length,
+        duration_s: formDuration ?? null,
+      },
+    });
   } catch (error: unknown) {
     console.error('[API Upload Exception]', error);
     const msg = error instanceof Error ? error.message : 'Lỗi server';
