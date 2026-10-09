@@ -1,171 +1,313 @@
 'use client';
 
-import { useLocale } from '@/components/providers/locale-provider';
-import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
-import { useCouple } from '@/hooks/use-couple';
-import { useCalendarDates } from '@/hooks/use-dates';
-import type { DateEntry } from '@/types';
+import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  addMonths,
-  differenceInCalendarDays,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
   format,
-  isAfter,
-  isSameDay,
-  isSameMonth,
-  startOfDay,
-  startOfMonth,
-  startOfWeek,
+  addMonths,
   subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameMonth,
+  isSameDay,
+  isAfter,
+  differenceInCalendarDays,
+  startOfDay,
 } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { ChevronLeft, ChevronRight, Plus, MapPin, Calendar as CalendarIcon, ExternalLink } from 'lucide-react';
+import { useCouple, parseLocalDate } from '@/hooks/use-couple';
+import { useDatesByDayRange } from '@/hooks/use-dates';
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { Modal } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
+import { SecureImage } from '@/components/features/secure-image';
+import type { DateEntry } from '@/types';
 
-function parseLocalDate(dateInput: string | Date): Date {
-  if (dateInput instanceof Date) return startOfDay(dateInput);
-  const dateStr = String(dateInput).split('T')[0];
-  const parts = dateStr.split('-');
-  if (parts.length === 3) {
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const day = parseInt(parts[2], 10);
-    return new Date(year, month, day);
-  }
-  return startOfDay(new Date(dateInput));
-}
+const MOOD_EMOJIS: Record<string, string> = {
+  love: '❤️',
+  happy: '😊',
+  calm: '🌿',
+  excited: '🎉',
+  tired: '🥱',
+  sad: '🌧️',
+};
 
 export function MonthlyCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const { t } = useLocale();
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const router = useRouter();
 
   const { couple, isLoading: isLoadingCouple } = useCouple();
-  const { data: dates, isLoading: isLoadingDates } = useCalendarDates(couple?.id);
 
-  if (isLoadingCouple) {
-    return <LoadingSkeleton variant="rect" height="400px" className="rounded-[var(--radius-lg)]" />;
-  }
-
-  const anniversaryDate = couple?.anniversary_date ? parseLocalDate(couple.anniversary_date) : null;
+  const anniversaryDate = couple?.anniversary_date
+    ? parseLocalDate(couple.anniversary_date)
+    : null;
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 }); // Start on Monday
+  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
-  const dateFormat = 'MMMM - yyyy';
-  const days = eachDayOfInterval({
-    start: startDate,
-    end: endDate,
-  });
+  const startDateStr = format(startDate, 'yyyy-MM-dd');
+  const endDateStr = format(endDate, 'yyyy-MM-dd');
 
-  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+  const { data: dates = [], isLoading: isLoadingDates } = useDatesByDayRange(
+    couple?.id,
+    startDateStr,
+    endDateStr
+  );
 
-  const getDatesForDay = (day: Date) => {
-    if (!dates) return [];
+  const days = useMemo(
+    () => eachDayOfInterval({ start: startDate, end: endDate }),
+    [startDateStr, endDateStr]
+  );
+
+  const today = startOfDay(new Date());
+
+  const getDatesForDay = (day: Date): DateEntry[] => {
+    if (!dates || dates.length === 0) return [];
+    const t = startOfDay(day).getTime();
     return dates.filter((d) => {
-      const entryDate = d.date_time ? new Date(d.date_time) : new Date(d.created_at);
-      return isSameDay(entryDate, day);
+      const s = startOfDay(new Date(d.date_time || d.created_at)).getTime();
+      const e = startOfDay(new Date(d.end_date || d.date_time || d.created_at)).getTime();
+      return t >= s && t <= e;
     });
   };
 
   const handleDayClick = (day: Date) => {
     const dayDates = getDatesForDay(day);
     if (dayDates.length > 0) {
-      router.push(`/dates/${dayDates[0].id}`);
-    } else {
-      const formattedDateStr = format(day, 'yyyy-MM-dd');
-      router.push(`/dates/new?date=${formattedDateStr}`);
+      setSelectedDay(day);
+      return;
     }
+    // Future empty days are not clickable per spec
+    if (isAfter(startOfDay(day), today)) {
+      return;
+    }
+    const formatted = format(day, 'yyyy-MM-dd');
+    router.push(`/dates/new?date=${formatted}`);
   };
 
+  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+
+  if (isLoadingCouple) {
+    return <LoadingSkeleton variant="rect" height="420px" className="rounded-[var(--radius-xl)]" />;
+  }
+
+  const selectedDayDates = selectedDay ? getDatesForDay(selectedDay) : [];
+
   return (
-    <div className="bg-surface rounded-[var(--radius-lg)] border border-border shadow-sm p-2.5 sm:p-4 md:p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6">
-        <h2 className="font-heading text-base sm:text-lg md:text-xl font-bold text-text capitalize truncate">
-          {format(currentMonth, dateFormat, { locale: vi })}
-        </h2>
+    <div className="bg-surface rounded-[var(--radius-xl)] border border-border shadow-xs p-4 sm:p-6 flex flex-col">
+      {/* Calendar Header */}
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div>
+          <h2 className="font-heading text-lg sm:text-xl font-bold text-text">Lịch tình yêu</h2>
+          <p className="text-xs sm:text-sm text-text-muted capitalize">
+            {format(currentMonth, 'MMMM - yyyy', { locale: vi })}
+          </p>
+        </div>
         <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={prevMonth}
-            className="p-1.5 sm:p-2 rounded-[var(--radius-md)] hover:bg-surface-hover text-text-muted transition-colors cursor-pointer"
+            className="p-2 rounded-[var(--radius-md)] hover:bg-surface-hover text-text-muted hover:text-text transition-colors cursor-pointer"
             aria-label="Tháng trước"
           >
-            <ChevronLeft size={18} className="sm:w-5 sm:h-5" />
+            <ChevronLeft size={20} />
           </button>
           <button
             onClick={nextMonth}
-            className="p-1.5 sm:p-2 rounded-[var(--radius-md)] hover:bg-surface-hover text-text-muted transition-colors cursor-pointer"
+            className="p-2 rounded-[var(--radius-md)] hover:bg-surface-hover text-text-muted hover:text-text transition-colors cursor-pointer"
             aria-label="Tháng sau"
           >
-            <ChevronRight size={18} className="sm:w-5 sm:h-5" />
+            <ChevronRight size={20} />
           </button>
         </div>
       </div>
 
-      {/* Days of Week */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5 md:gap-2 mb-1.5 sm:mb-2">
-        {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day) => (
-          <div key={day} className="text-center text-[11px] sm:text-xs font-semibold text-text-muted py-1 sm:py-2">
-            {day}
+      {/* Weekdays */}
+      <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 text-center text-xs font-semibold text-text-muted">
+        {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d) => (
+          <div key={d} className="py-1">
+            {d}
           </div>
         ))}
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5 md:gap-2">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {days.map((day) => {
           const isCurrentMonth = isSameMonth(day, monthStart);
-          const isToday = isSameDay(day, new Date());
+          const isDayToday = isSameDay(day, today);
+          const isFuture = isAfter(startOfDay(day), today);
           const dayDates = getDatesForDay(day);
           const hasEvent = dayDates.length > 0;
-          
+
           let dayCountText = '';
-          if (anniversaryDate && (isAfter(day, anniversaryDate) || isSameDay(day, anniversaryDate))) {
+          if (
+            anniversaryDate &&
+            (isAfter(day, anniversaryDate) || isSameDay(day, anniversaryDate))
+          ) {
             const count = differenceInCalendarDays(day, anniversaryDate) + 1;
             dayCountText = count === 0 ? '0' : `${count}`;
           }
 
+          const isClickable = hasEvent || !isFuture;
+
           return (
-            <div
-              key={day.toString()}
+            <button
+              type="button"
+              key={day.toISOString()}
+              disabled={!isClickable}
               onClick={() => handleDayClick(day)}
               className={`
-                relative h-[50px] sm:h-[58px] md:h-24 p-0.5 sm:p-1 md:p-2 border rounded-[var(--radius-sm)] sm:rounded-[var(--radius-md)] transition-all flex items-center justify-center overflow-hidden select-none cursor-pointer hover:border-primary/50 hover:bg-primary/10 hover:shadow-sm active:scale-95
-                ${isCurrentMonth ? 'bg-surface border-border' : 'bg-surface/30 border-transparent text-text-muted/30'}
-                ${isToday ? 'border-primary ring-1 ring-primary/25 bg-primary/5' : ''}
+                relative h-14 sm:h-18 md:h-20 p-1 rounded-[var(--radius-md)] border text-left flex flex-col justify-between transition-all select-none
+                ${
+                  isDayToday
+                    ? 'border-primary ring-2 ring-primary/25 bg-primary/5 font-bold'
+                    : isCurrentMonth
+                    ? 'border-border bg-surface hover:border-primary/40'
+                    : 'border-transparent bg-surface/30 text-text-muted/40'
+                }
+                ${
+                  hasEvent
+                    ? 'cursor-pointer hover:bg-primary/10 hover:shadow-xs'
+                    : isFuture
+                    ? 'cursor-not-allowed opacity-45'
+                    : 'cursor-pointer hover:bg-surface-hover'
+                }
               `}
             >
-              {/* Day Count from Anniversary (Top Right) */}
-              {dayCountText && isCurrentMonth && (
-                <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 md:top-2 md:right-2 pointer-events-none">
-                  <span className="text-[9px] sm:text-[10px] md:text-xs text-text-muted font-medium bg-surface-hover/90 px-0.5 sm:px-1 py-0.5 rounded leading-none block">
+              {/* Top row: Day of month + Day count */}
+              <div className="flex items-start justify-between w-full">
+                <span
+                  className={`text-xs sm:text-sm font-semibold leading-none ${
+                    isDayToday ? 'text-primary' : 'text-text'
+                  } ${!isCurrentMonth ? 'opacity-40' : ''}`}
+                >
+                  {format(day, 'd')}
+                </span>
+
+                {/* Day count from anniversary */}
+                {dayCountText && isCurrentMonth && (
+                  <span className="text-[9px] sm:text-[10px] text-text-muted font-mono leading-none bg-surface-hover px-1 py-0.5 rounded-sm">
                     {dayCountText}
                   </span>
-                </div>
-              )}
-
-              {/* Day Number (Centered) */}
-              <span className={`text-sm sm:text-base md:text-xl font-semibold leading-none ${isToday ? 'text-primary font-bold' : 'text-text'} ${!isCurrentMonth && !isToday ? 'opacity-30' : ''}`}>
-                {format(day, 'd')}
-              </span>
-
-              {/* Event Indicator (Bottom Center) */}
-              <div className="absolute bottom-1 sm:bottom-1.5 md:bottom-2 left-0 right-0 flex justify-center pointer-events-none">
-                {hasEvent && (
-                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 shadow-sm" />
                 )}
               </div>
-            </div>
+
+              {/* Bottom center: Pink dot for memories */}
+              <div className="flex items-center justify-center w-full min-h-[8px]">
+                {hasEvent && (
+                  <span
+                    className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-primary shadow-xs ring-2 ring-surface animate-in fade-in zoom-in"
+                    title={`${dayDates.length} kỷ niệm`}
+                  />
+                )}
+              </div>
+            </button>
           );
         })}
       </div>
+
+      {/* Caption per spec */}
+      <p className="text-xs text-text-muted mt-4 text-center sm:text-left">
+        Số nhỏ là ngày yêu. Chấm hồng là ngày đã ghi. Chạm vào ô trống để ghi mới.
+      </p>
+
+      {/* Day Details Bottom Sheet / Modal */}
+      {selectedDay && (
+        <Modal
+          isOpen={true}
+          onClose={() => setSelectedDay(null)}
+          title={`Kỷ niệm ngày ${format(selectedDay, 'dd/MM/yyyy')}`}
+          size="md"
+        >
+          <div className="space-y-4">
+            <div className="space-y-3">
+              {selectedDayDates.map((d) => {
+                const moodEmoji = d.mood ? MOOD_EMOJIS[d.mood] : null;
+                const mediaItem = d.media && d.media.length > 0 ? d.media[0] : null;
+                const place = d.places && d.places.length > 0 ? d.places[0] : null;
+
+                return (
+                  <div
+                    key={d.id}
+                    onClick={() => {
+                      setSelectedDay(null);
+                      router.push(`/dates/${d.id}`);
+                    }}
+                    className="group flex items-center gap-3 p-3 rounded-[var(--radius-lg)] border border-border bg-surface-hover/50 hover:bg-surface-hover hover:border-primary/40 transition-all cursor-pointer shadow-2xs"
+                  >
+                    {/* Media thumbnail */}
+                    <div className="w-16 h-16 rounded-[var(--radius-md)] overflow-hidden shrink-0 bg-surface border border-border">
+                      <SecureImage
+                        mediaId={mediaItem?.id}
+                        src={mediaItem ? undefined : d.checkin_image_url}
+                        alt={d.title || 'Kỷ niệm'}
+                        size="thumb"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        {moodEmoji && <span>{moodEmoji}</span>}
+                        <h4 className="font-semibold text-sm sm:text-base text-text truncate group-hover:text-primary transition-colors">
+                          {d.title || 'Buổi hẹn hò'}
+                        </h4>
+                      </div>
+
+                      {(place?.name || d.location_name) && (
+                        <p className="text-xs text-text-muted flex items-center gap-1 mt-0.5 truncate">
+                          <MapPin size={12} className="shrink-0" />
+                          <span>{place?.name || d.location_name}</span>
+                        </p>
+                      )}
+
+                      {d.note && (
+                        <p className="text-xs text-text-muted mt-1 line-clamp-1 italic">
+                          &ldquo;{d.note}&rdquo;
+                        </p>
+                      )}
+                    </div>
+
+                    <ExternalLink size={16} className="text-text-muted group-hover:text-primary shrink-0 transition-colors" />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-between pt-2 border-t border-border">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedDay(null)}
+              >
+                Đóng
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={() => {
+                  const dayStr = format(selectedDay, 'yyyy-MM-dd');
+                  setSelectedDay(null);
+                  router.push(`/dates/new?date=${dayStr}`);
+                }}
+              >
+                <Plus size={16} className="mr-1" />
+                Ghi thêm kỷ niệm
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -25,6 +25,8 @@ export const keys = {
     onThisDay: (coupleId: string, day?: string) => ['dates', coupleId, 'on-this-day', day || ''] as const,
     /** Toàn bộ dates nhưng chỉ cột nhẹ cho lịch. */
     calendar: (coupleId: string) => ['dates', coupleId, 'calendar'] as const,
+    /** Khoảng ngày cho lịch tình yêu */
+    range: (coupleId: string, start: string, end: string) => ['dates', coupleId, 'range', start, end] as const,
     /** 3 mục mới nhất cho dashboard. */
     recent: (coupleId: string) => ['dates', coupleId, 'recent'] as const,
     detail: (id: string) => ['dates', 'detail', id] as const,

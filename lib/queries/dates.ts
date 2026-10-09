@@ -63,3 +63,38 @@ export async function getDateById(
 
   return data as DateEntry | null;
 }
+
+export async function getDatesByDayRange(
+  supabase: SupabaseClient,
+  coupleId: string,
+  startDate: string,
+  endDate: string
+): Promise<DateEntry[]> {
+  const { data, error } = await supabase.rpc('dates_by_day_range', {
+    p_couple: coupleId,
+    p_start: startDate,
+    p_end: endDate,
+  });
+
+  if (error) {
+    console.error('getDatesByDayRange error:', error);
+    return [];
+  }
+
+  const entries = (data || []) as DateEntry[];
+  if (entries.length === 0) return [];
+
+  // Query media and places for these dates in parallel
+  const dateIds = entries.map((d) => d.id);
+  const [{ data: mediaRows }, { data: placesRows }] = await Promise.all([
+    supabase.from('date_media').select('*').in('date_id', dateIds).order('position'),
+    supabase.from('date_places').select('*').in('date_id', dateIds).order('position'),
+  ]);
+
+  return entries.map((e) => ({
+    ...e,
+    media: mediaRows?.filter((m) => m.date_id === e.id) || [],
+    places: placesRows?.filter((p) => p.date_id === e.id) || [],
+  }));
+}
+

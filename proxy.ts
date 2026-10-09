@@ -1,7 +1,23 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-const APP_ROUTES = ['/dashboard', '/dates', '/chat', '/insights', '/settings', '/couple'];
+const APP_ROUTES = [
+  '/dashboard',
+  '/dates',
+  '/chat',
+  '/cupid',
+  '/insights',
+  '/settings',
+  '/couple',
+  '/more',
+  '/together',
+  '/daily',
+  '/spending',
+  '/map',
+  '/capsule',
+  '/quiz',
+  '/wrapped',
+];
 
 export async function proxy(request: NextRequest) {
   const token = await getToken({

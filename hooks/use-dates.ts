@@ -4,7 +4,7 @@ import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import type { DateEntry } from '@/types';
 import { keys as queryKeys } from '@/lib/query/keys';
-import { getDateById, DATES_PAGE_SIZE, getCalendarDates } from '@/lib/queries/dates';
+import { getDateById, DATES_PAGE_SIZE, getCalendarDates, getDatesByDayRange, getDates } from '@/lib/queries/dates';
 
 export interface DateFilters {
   search?: string;
@@ -110,3 +110,38 @@ export function useOnThisDay(coupleId: string | undefined, day?: string) {
     enabled: !!coupleId,
   });
 }
+
+/**
+ * T3.3 Lịch tình yêu theo khoảng ngày (dates_by_day_range)
+ */
+export function useDatesByDayRange(
+  coupleId: string | undefined,
+  startDate: string,
+  endDate: string
+) {
+  const supabase = createClient();
+  return useQuery({
+    queryKey: queryKeys.dates.range(coupleId ?? '', startDate, endDate),
+    queryFn: async () => {
+      if (!coupleId || !startDate || !endDate) return [];
+      return getDatesByDayRange(supabase, coupleId, startDate, endDate);
+    },
+    enabled: !!coupleId && !!startDate && !!endDate,
+  });
+}
+
+/**
+ * T3.5 Kỷ niệm gần đây cho Home
+ */
+export function useRecentDates(coupleId: string | undefined, limit: number = 3) {
+  const supabase = createClient();
+  return useQuery({
+    queryKey: queryKeys.dates.recent(coupleId ?? ''),
+    queryFn: async () => {
+      if (!coupleId) return [];
+      return getDates(supabase, coupleId, 1, limit);
+    },
+    enabled: !!coupleId,
+  });
+}
+
