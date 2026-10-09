@@ -6,6 +6,7 @@ import { getNumerologyPrompt } from '@/lib/ai/prompts/numerology';
 import { getZodiacCompatibilityPrompt, getZodiacSign } from '@/lib/ai/prompts/zodiac';
 import { getTarotReadingPrompt, MAJOR_ARCANA } from '@/lib/ai/prompts/tarot';
 import { getPalmReadingPrompt } from '@/lib/ai/prompts/palm';
+import { consumeQuota, refundQuota } from '@/lib/quota';
 import { z } from 'zod';
 
 const readingSchema = z.object({
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
 
   const { type, input_data } = parsed.data;
 
-  // Check cache - same type + same input within last 24h
+  // Check cache - same type within last 24h
   const { data: cached } = await supabase
     .from('ai_readings')
     .select('*')
@@ -41,9 +42,18 @@ export async function POST(request: NextRequest) {
     .limit(1)
     .maybeSingle();
 
-  // For numerology/zodiac, same birth_date = same result, use cache
+  // For numerology/zodiac, same birth_date = same result, use cache (no quota consumed)
   if (cached && (type === 'numerology' || type === 'zodiac')) {
     return NextResponse.json({ data: cached });
+  }
+
+  // Quota check: 30 readings/day per user
+  const quota = await consumeQuota(user.id, 'reading', 30);
+  if (!quota.ok) {
+    return NextResponse.json(
+      { error: 'Hôm nay bạn đã thực hiện đủ số lượt khám phá rồi, mai quay lại nhé ✨' },
+      { status: 429 }
+    );
   }
 
   // Generate prompt based on type
@@ -53,17 +63,23 @@ export async function POST(request: NextRequest) {
   try {
     if (type === 'numerology') {
       const birthDate = input_data.birth_date as string;
-      const displayName = input_data.display_name as string || 'Bạn';
-      if (!birthDate) return NextResponse.json({ error: 'Thiếu ngày sinh' }, { status: 400 });
+      const displayName = (input_data.display_name as string) || 'Bạn';
+      if (!birthDate) {
+        await refundQuota(user.id, 'reading');
+        return NextResponse.json({ error: 'Thiếu ngày sinh' }, { status: 400 });
+      }
       const prompts = getNumerologyPrompt(birthDate, displayName);
       system = prompts.system;
       userPrompt = prompts.user;
     } else if (type === 'zodiac') {
       const birthDate1 = input_data.birth_date_1 as string;
       const birthDate2 = input_data.birth_date_2 as string;
-      const name1 = input_data.name_1 as string || 'Bạn';
-      const name2 = input_data.name_2 as string || 'Người yêu';
-      if (!birthDate1 || !birthDate2) return NextResponse.json({ error: 'Cần ngày sinh cả 2 người' }, { status: 400 });
+      const name1 = (input_data.name_1 as string) || 'Bạn';
+      const name2 = (input_data.name_2 as string) || 'Người yêu';
+      if (!birthDate1 || !birthDate2) {
+        await refundQuota(user.id, 'reading');
+        return NextResponse.json({ error: 'Cần ngày sinh cả 2 người' }, { status: 400 });
+      }
       const sign1 = getZodiacSign(birthDate1);
       const sign2 = getZodiacSign(birthDate2);
       const prompts = getZodiacCompatibilityPrompt(sign1.name, name1, sign2.name, name2);
@@ -71,17 +87,26 @@ export async function POST(request: NextRequest) {
       userPrompt = prompts.user;
     } else if (type === 'tarot') {
       const cardIds = input_data.card_ids as number[];
-      if (!cardIds || cardIds.length !== 3) return NextResponse.json({ error: 'Cần chọn đúng 3 lá bài' }, { status: 400 });
+      if (!cardIds || cardIds.length !== 3) {
+        await refundQuota(user.id, 'reading');
+        return NextResponse.json({ error: 'Cần chọn đúng 3 lá bài' }, { status: 400 });
+      }
       const cards = cardIds.map((id) => MAJOR_ARCANA.find((c) => c.id === id)!).filter(Boolean);
-      if (cards.length !== 3) return NextResponse.json({ error: 'Lá bài không hợp lệ' }, { status: 400 });
+      if (cards.length !== 3) {
+        await refundQuota(user.id, 'reading');
+        return NextResponse.json({ error: 'Lá bài không hợp lệ' }, { status: 400 });
+      }
       const prompts = getTarotReadingPrompt(cards);
       system = prompts.system;
       userPrompt = prompts.user;
     } else if (type === 'palm') {
-      // Palm reading uses multimodal — image sent as base64 or data URL
+      // Palm reading uses multimodal — image sent as base64 or data URL (NOT saved to DB)
       const rawImage = (input_data.image_base64 || input_data.image) as string;
       let mimeType = (input_data.mime_type as string) || 'image/jpeg';
-      if (!rawImage) return NextResponse.json({ error: 'Cần ảnh lòng bàn tay' }, { status: 400 });
+      if (!rawImage) {
+        await refundQuota(user.id, 'reading');
+        return NextResponse.json({ error: 'Cần ảnh lòng bàn tay' }, { status: 400 });
+      }
 
       let imageBase64 = rawImage;
       if (rawImage.startsWith('data:')) {
@@ -96,16 +121,18 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const { system } = getPalmReadingPrompt();
+      const { system: palmSystem } = getPalmReadingPrompt();
       let palmResult: string;
       try {
-        palmResult = await generateWithImage(system, imageBase64, mimeType);
+        palmResult = await generateWithImage(palmSystem, imageBase64, mimeType);
       } catch (e: unknown) {
+        await refundQuota(user.id, 'reading');
         const msg = e instanceof Error ? e.message : String(e);
         console.error('[POST /api/ai/reading] Palm AI error:', msg);
         return NextResponse.json({ error: 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại!' }, { status: 503 });
       }
-      // Save to DB (without the huge base64 in input_data)
+
+      // Save to DB (without the image in input_data for privacy)
       const { data: palmReading, error: palmInsertError } = await supabase
         .from('ai_readings')
         .insert({
@@ -116,22 +143,26 @@ export async function POST(request: NextRequest) {
         })
         .select()
         .single();
+
       if (palmInsertError) {
         return NextResponse.json({ data: { result_text: palmResult, type: 'palm', input_data: {} } });
       }
       return NextResponse.json({ data: palmReading });
     } else {
+      await refundQuota(user.id, 'reading');
       return NextResponse.json({ error: 'Loại reading không hợp lệ' }, { status: 400 });
     }
-  } catch (e) {
+  } catch {
+    await refundQuota(user.id, 'reading');
     return NextResponse.json({ error: 'Lỗi xử lý dữ liệu đầu vào' }, { status: 400 });
   }
 
-  // Call Gemini
+  // Call Gemini for text generation
   let resultText: string;
   try {
     resultText = await generateText(system, userPrompt);
   } catch (e) {
+    await refundQuota(user.id, 'reading');
     console.error('[POST /api/ai/reading] AI error:', e);
     return NextResponse.json({ error: 'Dịch vụ AI tạm thời không khả dụng' }, { status: 503 });
   }

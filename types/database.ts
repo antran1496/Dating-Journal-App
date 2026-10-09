@@ -185,7 +185,9 @@ export type AiReading = {
   type: 'numerology' | 'zodiac' | 'tarot' | 'palm';
   input_data: Record<string, unknown>;
   result_text: string;
+  shared_with_partner?: boolean;
   created_at: string;
+  profile?: Profile;
 };
 
 export type AiChatSession = {

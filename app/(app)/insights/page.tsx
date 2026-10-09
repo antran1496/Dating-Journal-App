@@ -102,14 +102,13 @@ export default function InsightsPage() {
         }
       }
 
-      // 4. Get all readings
+      // 4. Get all readings (own + partner shared)
       const { data: rData } = await supabase
         .from('ai_readings')
-        .select('*')
-        .eq('profile_id', user.id)
+        .select('*, profile:profiles(display_name)')
         .order('created_at', { ascending: false });
 
-      if (rData) setReadings(rData as AiReading[]);
+      if (rData) setReadings(rData as unknown as AiReading[]);
       setIsLoading(false);
     }
     loadData();
@@ -203,10 +202,10 @@ export default function InsightsPage() {
       <div>
         <h1 className="font-heading text-2xl font-bold text-text flex items-center gap-2">
           <Sparkles className="w-7 h-7 text-primary" />
-          Khám phá tình yêu
+          Khám phá tình yêu ✨
         </h1>
         <p className="text-text-muted text-sm mt-1">
-          Dùng AI để hiểu rõ hơn về mối quan hệ của hai bạn
+          Cho vui thôi nha, đừng xem là lời tiên tri 🔮
         </p>
       </div>
 
@@ -378,7 +377,7 @@ export default function InsightsPage() {
             </CardHeader>
             <CardBody className="flex flex-col items-center gap-6">
               <p className="text-text-muted text-sm text-center max-w-sm">
-                Tải lên ảnh chụp rõ nét lòng bàn tay của bạn để AI phân tích chi tiết các đường chỉ tay.
+                Tải lên ảnh chụp rõ nét lòng bàn tay của bạn để AI phân tích chi tiết các đường chỉ tay. Ảnh chỉ dùng để luận giải, không được lưu.
               </p>
               
               {!palmImage ? (
@@ -448,7 +447,23 @@ export default function InsightsPage() {
           </h2>
           <div className="grid grid-cols-1 gap-6">
             {readings.filter(r => r.type === activeTab).map((reading) => (
-              <ReadingCard key={reading.id} reading={reading} />
+              <ReadingCard 
+                key={reading.id} 
+                reading={reading} 
+                isOwn={reading.profile_id === user?.id}
+                partnerName={partnerProfile?.display_name || 'Người ấy'}
+                onToggleShare={async (id, nextShared) => {
+                  const res = await fetch(`/api/ai/reading/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ shared_with_partner: nextShared }),
+                  });
+                  if (!res.ok) throw new Error('Cập nhật thất bại');
+                  setReadings((prev) =>
+                    prev.map((r) => (r.id === id ? { ...r, shared_with_partner: nextShared } : r))
+                  );
+                }}
+              />
             ))}
           </div>
         </div>

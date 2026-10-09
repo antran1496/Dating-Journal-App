@@ -89,7 +89,7 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
         </div>
         <div>
           <h2 className="font-heading font-bold text-lg text-text">Cupid 💘</h2>
-          <p className="text-xs text-text-muted">Chuyên gia tình yêu AI của bạn</p>
+          <p className="text-xs text-text-muted">Gợi ý buổi hẹn theo ngân sách và wishlist của hai bạn.</p>
         </div>
       </div>
 
@@ -99,18 +99,18 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
           <div className="h-full flex flex-col items-center justify-center text-center">
             <div className="flex flex-col items-center justify-center opacity-70 mb-8 mt-4">
               <Sparkles className="w-12 h-12 text-primary mb-3" />
-              <p className="text-text font-medium">Chào {profile?.display_name || 'bạn'}!</p>
+              <p className="text-text font-medium">Chào {profile?.display_name || 'hai bạn'}!</p>
               <p className="text-sm text-text-muted mt-1 max-w-xs">
-                Mình là Cupid, sẵn sàng lắng nghe và đưa ra những gợi ý thú vị cho chuyện tình cảm của bạn.
+                Mình là Cupid, sẵn sàng gợi ý buổi hẹn dựa trên ngân sách và danh sách wishlist của hai bạn.
               </p>
             </div>
             
             <div className="w-full max-w-md grid grid-cols-1 md:grid-cols-2 gap-2 mt-auto pb-4">
               {[
-                "Gợi ý địa điểm hẹn hò 🗺️",
-                "Quà tặng cho người yêu 🎁",
-                "Cách giải quyết xung đột 💬",
-                "Ý tưởng kỉ niệm đặc biệt 🎉"
+                "Buổi hẹn ấm cúng dưới 300k ☕",
+                "Lên kế hoạch một món trong wishlist ✨",
+                "Ý tưởng hẹn hò cuối tuần này 🌿",
+                "Món quà bất ngờ cho người ấy 🎁"
               ].map((suggestion) => (
                 <button
                   type="button"
@@ -206,7 +206,7 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
                 handleSubmit(e);
               }
             }}
-            placeholder="Hỏi Cupid điều gì đó..."
+            placeholder="Nhắn cho Cupid..."
             className="flex-1 max-h-32 min-h-[44px] py-2.5 pl-4 pr-12 bg-surface-hover border border-border rounded-3xl resize-none focus:outline-none focus:border-primary/50 text-sm text-text"
             rows={1}
           />
@@ -218,6 +218,9 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
             <Send className="w-4 h-4" />
           </button>
         </form>
+        <p className="text-[11px] text-text-muted text-center mt-2 px-2">
+          Cupid gợi ý để tham khảo và không đưa ra lời khuyên y tế hay pháp lý. Cuộc trò chuyện chỉ hai bạn xem được.
+        </p>
       </div>
     </div>
   );
