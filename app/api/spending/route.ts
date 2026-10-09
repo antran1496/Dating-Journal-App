@@ -48,11 +48,11 @@ export async function GET(request: NextRequest) {
 
   const authorNames: Record<string, string> = {};
   if (members) {
-    for (const m of members as Array<{
+    for (const m of (members as unknown as Array<{
       profile_id: string;
       nickname: string | null;
       profile: { id: string; display_name: string | null } | null;
-    }>) {
+    }>)) {
       const displayName = m.profile?.display_name || m.nickname || 'Người ấy';
       authorNames[m.profile_id] = displayName;
     }

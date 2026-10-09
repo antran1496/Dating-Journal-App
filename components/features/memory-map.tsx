@@ -408,7 +408,7 @@ export default function MemoryMap({ dates, onUpdatePlaceCoords }: MemoryMapProps
                                       place.id,
                                       res.lat,
                                       res.lng,
-                                      res.area_label
+                                      res.area_label ?? undefined
                                     )
                                   }
                                   className="w-full text-left p-1.5 rounded hover:bg-surface-hover text-[11px] flex justify-between items-center group cursor-pointer"

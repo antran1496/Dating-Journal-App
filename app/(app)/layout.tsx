@@ -14,6 +14,7 @@ import { keys as queryKeys } from '@/lib/query/keys';
 import type { Locale } from '@/lib/i18n/translations';
 import { CacheWarmup } from '@/components/providers/cache-warmup';
 import { CoupleGuard } from '@/components/providers/couple-guard';
+import { AppLockProvider } from '@/components/security/app-lock';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
@@ -59,7 +60,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <div className="max-w-5xl mx-auto p-4 md:p-8">
                 <CoupleGuard couple={couple}>
                   <CacheWarmup couple={couple}>
-                    {children}
+                    <AppLockProvider>{children}</AppLockProvider>
                   </CacheWarmup>
                 </CoupleGuard>
               </div>
