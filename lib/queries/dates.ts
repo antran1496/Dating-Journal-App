@@ -56,12 +56,29 @@ export async function getDateById(
     .eq('id', id)
     .maybeSingle();
 
-  if (error) {
-    console.error('getDateById error:', error);
+  if (error || !data) {
+    if (error) console.error('getDateById error:', error);
     return null;
   }
 
-  return data as DateEntry | null;
+  // Fetch social interactions in parallel
+  const [{ data: reactions }, { data: comments }, { data: views }] = await Promise.all([
+    supabase.from('date_reactions').select('*, profile:profiles(*)').eq('date_id', id),
+    supabase
+      .from('date_comments')
+      .select('*, author:profiles(*)')
+      .eq('date_id', id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: true }),
+    supabase.from('date_views').select('*, profile:profiles(*)').eq('date_id', id),
+  ]);
+
+  return {
+    ...data,
+    reactions: reactions || [],
+    comments: comments || [],
+    views: views || [],
+  } as DateEntry;
 }
 
 export async function getDatesByDayRange(

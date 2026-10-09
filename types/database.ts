@@ -60,6 +60,73 @@ export type DateEntry = {
   updated_at?: string;
   places?: DatePlace[];
   media?: DateMedia[];
+  reactions?: DateReaction[];
+  comments?: DateComment[];
+  views?: DateView[];
+};
+
+export type DateReaction = {
+  date_id: string;
+  profile_id: string;
+  emoji: string;
+  created_at: string;
+  profile?: Profile;
+};
+
+export type DateComment = {
+  id: string;
+  date_id: string;
+  author_id: string | null;
+  body: string;
+  created_at: string;
+  edited_at?: string | null;
+  deleted_at?: string | null;
+  author?: Profile;
+};
+
+export type DateView = {
+  date_id: string;
+  profile_id: string;
+  seen_at: string;
+  profile?: Profile;
+};
+
+export type Question = {
+  id: number;
+  text_vi: string;
+  text_en?: string | null;
+  category: string;
+  active: boolean;
+  created_at: string;
+};
+
+export type CoupleDailyQuestion = {
+  couple_id: string;
+  day: string;
+  question_id: number;
+  question?: Question;
+};
+
+export type DailyAnswer = {
+  couple_id: string;
+  day: string;
+  profile_id: string;
+  body: string;
+  answered_at: string;
+  profile?: Profile;
+};
+
+export type WishlistItem = {
+  id: string;
+  couple_id: string;
+  title: string;
+  note?: string | null;
+  budget_vnd?: number | null;
+  created_by?: string | null;
+  done_at?: string | null;
+  done_by?: string | null;
+  linked_date_id?: string | null;
+  created_at: string;
 };
 
 export type DatePlace = {

@@ -38,6 +38,12 @@ export const keys = {
   readings: {
     mine: () => ['readings', 'mine'] as const,
   },
+  daily: {
+    today: (coupleId: string) => ['daily', coupleId, 'today'] as const,
+  },
+  wishlist: {
+    list: (coupleId: string) => ['wishlist', coupleId, 'list'] as const,
+  },
 };
 
 export const DATES_LIST_SEGMENT = 'list';

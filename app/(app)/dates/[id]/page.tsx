@@ -1,5 +1,6 @@
 import { DeleteDateButton } from "@/components/features/delete-date-button";
 import { ImageGallery } from "@/components/features/image-gallery";
+import { MemoryReactions } from "@/components/features/memory-reactions";
 import { BackButton } from "@/components/ui/back-button";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -11,9 +12,6 @@ import {
   Music,
   Coins,
   Tag,
-  Heart,
-  MessageCircle,
-  Eye,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -282,29 +280,12 @@ export default async function DateDetailPage(props: DateDetailPageProps) {
         )}
       </div>
 
-      {/* Reaction & Comments Placeholder (Phase P4) */}
-      <div className="p-4 rounded-[var(--radius-lg)] bg-surface border border-border space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="flex items-center gap-1.5 text-xs font-medium text-text-muted hover:text-primary transition-colors py-1 px-2 rounded-md hover:bg-surface-hover"
-            >
-              <Heart size={16} /> Thả tim
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-1.5 text-xs font-medium text-text-muted hover:text-primary transition-colors py-1 px-2 rounded-md hover:bg-surface-hover"
-            >
-              <MessageCircle size={16} /> Bình luận
-            </button>
-          </div>
-
-          <span className="text-xs text-text-muted flex items-center gap-1">
-            <Eye size={13} /> Chỉ hai bạn xem
-          </span>
-        </div>
-      </div>
+      {/* Reactions & Comments (Phase P4) */}
+      <MemoryReactions
+        dateId={entry.id}
+        coupleId={entry.couple_id}
+        createdBy={entry.created_by}
+      />
     </div>
   );
 }

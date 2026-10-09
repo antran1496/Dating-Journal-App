@@ -4,10 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { CoupleCounter } from '@/components/features/couple-counter';
+import { DailyQuestionWidget } from '@/components/features/daily-question-widget';
 import { MonthlyCalendar } from '@/components/features/monthly-calendar';
 import { OnThisDayWidget } from '@/components/features/on-this-day-widget';
 import { UpcomingMilestones } from '@/components/features/upcoming-milestones';
 import { RecentDates } from '@/components/features/recent-dates';
+import { WishlistWidget } from '@/components/features/wishlist-widget';
 import { MilestoneCelebration } from '@/components/features/milestone-celebration';
 import { MilestoneBanner } from '@/components/features/milestone-banner';
 import { useCouple } from '@/hooks/use-couple';
@@ -26,7 +28,14 @@ export default function DashboardPage() {
           <LoadingSkeleton variant="text" width="220px" height="32px" />
           <LoadingSkeleton variant="rect" width="110px" height="40px" className="rounded-full" />
         </div>
-        <LoadingSkeleton variant="rect" height="240px" className="rounded-[var(--radius-xl)]" />
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <div className="md:col-span-7">
+            <LoadingSkeleton variant="rect" height="260px" className="rounded-[var(--radius-xl)]" />
+          </div>
+          <div className="md:col-span-5">
+            <LoadingSkeleton variant="rect" height="260px" className="rounded-[var(--radius-xl)]" />
+          </div>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-7">
             <LoadingSkeleton variant="rect" height="380px" className="rounded-[var(--radius-xl)]" />
@@ -72,9 +81,14 @@ export default function DashboardPage() {
         </Link>
       </header>
 
-      {/* 3. Counter Card */}
-      <section aria-label="Đếm ngày yêu">
-        <CoupleCounter />
+      {/* 3. Hero Section: Counter Card + Daily Question */}
+      <section aria-label="Đếm ngày yêu & Câu hỏi hằng ngày" className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+        <div className="md:col-span-7">
+          <CoupleCounter />
+        </div>
+        <div className="md:col-span-5">
+          <DailyQuestionWidget />
+        </div>
       </section>
 
       {/* 4. Calendar + Side widgets: On this day & Upcoming Milestones */}
@@ -91,6 +105,13 @@ export default function DashboardPage() {
       {/* 5. Recent Memories */}
       <section aria-label="Kỷ niệm gần đây" className="pt-2">
         <RecentDates />
+      </section>
+
+      {/* 6. Wishlist Widget */}
+      <section aria-label="Muốn thử cùng nhau">
+        <div className="max-w-xl">
+          <WishlistWidget />
+        </div>
       </section>
     </div>
   );
