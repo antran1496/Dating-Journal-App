@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { Heart, X, PartyPopper } from 'lucide-react';
+import { Heart, PartyPopper, Share2 } from 'lucide-react';
+import Link from 'next/link';
 import { useCouple } from '@/hooks/use-couple';
 import { useLocale } from '@/components/providers/locale-provider';
 import { Modal } from '@/components/ui/modal';
@@ -31,6 +32,9 @@ export function MilestoneCelebration() {
   }, [isOpen]);
 
   const fireConfetti = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
     const duration = 3000;
     const end = Date.now() + duration;
     const colors = ['#ff6b81', '#ff4757', '#ff6348', '#ffa502', '#ff6b81'];
@@ -85,13 +89,24 @@ export function MilestoneCelebration() {
           </p>
         </div>
 
-        <Button 
-          onClick={handleClose} 
-          className="w-full sm:w-auto mt-4 text-lg px-8 py-6 rounded-full"
-          size="lg"
-        >
-          {t('milestone.celebrate')}
-        </Button>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-center pt-2">
+          <Link href="/wrapped/share?template=milestone" onClick={handleClose} className="w-full sm:w-auto">
+            <Button 
+              variant="secondary"
+              className="w-full sm:w-auto text-base px-6 py-4 rounded-full gap-2 border border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Share2 className="w-4 h-4" />
+              Tạo thẻ mốc
+            </Button>
+          </Link>
+          <Button 
+            onClick={handleClose} 
+            className="w-full sm:w-auto text-base px-8 py-4 rounded-full"
+            size="lg"
+          >
+            {t('milestone.celebrate')}
+          </Button>
+        </div>
       </div>
     </Modal>
   );
