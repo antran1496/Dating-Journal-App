@@ -117,7 +117,7 @@ export default function ThemeSettingsPage() {
       {/* ---- Section 2: Color Palette ---- */}
       <div>
         <p className="text-sm font-medium text-text mb-2">{t('theme.primary_color')}</p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {COLOR_PALETTES.map((palette) => {
             const isActive = activePalette?.id === palette.id;
             return (
@@ -141,7 +141,25 @@ export default function ThemeSettingsPage() {
               </button>
             );
           })}
+
+          {/* Custom Hex Picker */}
+          <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border">
+            <input
+              type="color"
+              value={primaryColor}
+              onChange={(e) => {
+                const hex = e.target.value;
+                setPrimaryColor(hex);
+                debouncedSave({ primary_color: hex });
+              }}
+              title="Chọn màu tùy ý"
+              className="w-10 h-10 rounded-full border border-border cursor-pointer bg-transparent p-0 overflow-hidden"
+            />
+          </div>
         </div>
+        <p className="text-xs text-text-muted mt-2">
+          Mọi màu đều được chỉnh để chữ đạt tương phản tối thiểu 4.5:1.
+        </p>
       </div>
 
       {/* ---- Section 3: Font Pair ---- */}

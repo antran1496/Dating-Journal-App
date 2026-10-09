@@ -10,6 +10,7 @@ import {
   FONT_PAIRS,
 } from '@/lib/theme/theme-presets';
 import { loadGoogleFont } from '@/lib/theme/font-loader';
+import { ensureAccessible, getAccessibleFg } from '@/lib/theme/contrast';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,21 +64,29 @@ const ThemeProviderContext = React.createContext<ThemeContextValue>({
 function applyColorPalette(primaryHex: string) {
   const root = document.documentElement;
   const palette = findPaletteByColor(primaryHex);
+  const isDark = root.classList.contains('dark');
+  const bgHex = isDark ? '#0f172a' : '#ffffff';
+
+  const primary = palette ? palette.primary : primaryHex;
+  const primaryStrong = ensureAccessible(primary, bgHex, 4.5);
+  const primaryFg = palette ? palette.primaryFg : getAccessibleFg(primary);
+
+  root.style.setProperty('--color-primary', primary);
+  root.style.setProperty('--color-primary-strong', primaryStrong);
+  root.style.setProperty('--color-primary-hover', palette ? palette.primaryHover : primaryStrong);
+  root.style.setProperty('--color-primary-fg', primaryFg);
 
   if (palette) {
-    root.style.setProperty('--color-primary', palette.primary);
-    root.style.setProperty('--color-primary-hover', palette.primaryHover);
-    root.style.setProperty('--color-primary-fg', palette.primaryFg);
     root.style.setProperty('--color-accent', palette.accent);
     root.style.setProperty('--color-accent-hover', palette.accentHover);
     root.style.setProperty('--color-accent-fg', palette.accentFg);
   } else {
-    // Custom color — just set primary, keep accent as default
-    root.style.setProperty('--color-primary', primaryHex);
-    root.style.setProperty('--color-primary-fg', '#ffffff');
+    root.style.setProperty('--color-accent', '#818cf8');
+    root.style.setProperty('--color-accent-hover', '#6366f1');
+    root.style.setProperty('--color-accent-fg', '#ffffff');
   }
 
-  root.style.setProperty('--shadow-glow', generateGlowShadow(primaryHex));
+  root.style.setProperty('--shadow-glow', generateGlowShadow(primary));
 }
 
 function applyFontPair(heading: string, body: string) {
@@ -101,26 +110,37 @@ export function ThemeProvider({
   enableSystem = true,
   initialPreferences,
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = React.useState<ThemeMode>(
-    (initialPreferences?.theme_mode as ThemeMode) ?? defaultTheme
-  );
-  const [primaryColor, setPrimaryColorState] = React.useState(
-    initialPreferences?.primary_color ?? '#ff6b81'
-  );
-  const [fontHeading, setFontHeading] = React.useState(
-    initialPreferences?.font_heading ?? 'Be Vietnam Pro'
-  );
-  const [fontBody, setFontBody] = React.useState(
-    initialPreferences?.font_body ?? 'Be Vietnam Pro'
-  );
-
-  // ---- Theme mode effect ----
-  React.useEffect(() => {
-    const savedTheme = localStorage.getItem('theme-mode') as ThemeMode | null;
-    if (savedTheme && !initialPreferences) {
-      setThemeState(savedTheme);
+  const [theme, setThemeState] = React.useState<ThemeMode>(() => {
+    if (typeof window !== 'undefined' && !initialPreferences) {
+      const savedTheme = localStorage.getItem('theme-mode') as ThemeMode | null;
+      if (savedTheme) return savedTheme;
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    return (initialPreferences?.theme_mode as ThemeMode) ?? defaultTheme;
+  });
+
+  const [primaryColor, setPrimaryColorState] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedColor = localStorage.getItem('theme-primary-color');
+      if (savedColor) return savedColor;
+    }
+    return initialPreferences?.primary_color ?? '#ff6b81';
+  });
+
+  const [fontHeading, setFontHeading] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedHeading = localStorage.getItem('theme-font-heading');
+      if (savedHeading) return savedHeading;
+    }
+    return initialPreferences?.font_heading ?? 'Be Vietnam Pro';
+  });
+
+  const [fontBody, setFontBody] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedBody = localStorage.getItem('theme-font-body');
+      if (savedBody) return savedBody;
+    }
+    return initialPreferences?.font_body ?? 'Be Vietnam Pro';
+  });
 
   React.useEffect(() => {
     const root = document.documentElement;
@@ -158,19 +178,6 @@ export function ThemeProvider({
       applyFontPair(fontHeading, fontBody);
     }
   }, [fontHeading, fontBody]);
-
-  // ---- Apply initial preferences on mount ----
-  React.useEffect(() => {
-    if (initialPreferences) {
-      const savedColor = localStorage.getItem('theme-primary-color');
-      const savedHeading = localStorage.getItem('theme-font-heading');
-      const savedBody = localStorage.getItem('theme-font-body');
-
-      if (savedColor) setPrimaryColorState(savedColor);
-      if (savedHeading) setFontHeading(savedHeading);
-      if (savedBody) setFontBody(savedBody);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Setters ----
   const setTheme = React.useCallback((mode: ThemeMode) => {
