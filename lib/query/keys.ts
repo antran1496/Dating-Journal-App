@@ -44,6 +44,9 @@ export const keys = {
   wishlist: {
     list: (coupleId: string) => ['wishlist', coupleId, 'list'] as const,
   },
+  spending: {
+    stats: (coupleId: string, month: string) => ['spending', coupleId, month] as const,
+  },
 };
 
 export const DATES_LIST_SEGMENT = 'list';

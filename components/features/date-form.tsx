@@ -26,6 +26,7 @@ import { makeThumbnail, extractVideoPoster } from '@/lib/image/image-compress';
 import { saveDraft } from '@/lib/drafts';
 import { useToast } from '@/components/ui/toast';
 import { useRouter } from 'next/navigation';
+import { PlacePicker } from '@/components/features/place-picker';
 
 export interface CreateDatePayload extends DateFormValues {
   places?: DatePlaceInput[];
@@ -325,8 +326,8 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
     setTags(tags.filter((t) => t !== tag));
   };
 
-  const handlePlaceChange = (index: number, name: string) => {
-    setPlaces((prev) => prev.map((p, i) => (i === index ? { ...p, name } : p)));
+  const handlePlaceChange = (index: number, val: DatePlaceInput) => {
+    setPlaces((prev) => prev.map((p, i) => (i === index ? val : p)));
   };
 
   const handleAddPlace = () => {
@@ -597,13 +598,13 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
         <div className="space-y-2">
           {places.map((place, idx) => (
             <div key={idx} className="flex items-center gap-2">
-              <input
-                type="text"
-                value={place.name}
-                onChange={(e) => handlePlaceChange(idx, e.target.value)}
-                placeholder={idx === 0 ? 'Tên quán, phố, điểm hẹn...' : `Điểm dừng ${idx + 1}...`}
-                className="flex-1 px-3.5 py-2 rounded-[var(--radius-md)] bg-surface border border-border text-text placeholder:text-text-muted text-sm focus:outline-none focus:border-primary transition-colors"
-              />
+              <div className="flex-1">
+                <PlacePicker
+                  value={place}
+                  onChange={(val) => handlePlaceChange(idx, val)}
+                  placeholder={idx === 0 ? 'Tên quán, phố, điểm hẹn...' : `Điểm dừng ${idx + 1}...`}
+                />
+              </div>
               {places.length > 1 && (
                 <button
                   type="button"

@@ -10,6 +10,7 @@ import { OnThisDayWidget } from '@/components/features/on-this-day-widget';
 import { UpcomingMilestones } from '@/components/features/upcoming-milestones';
 import { RecentDates } from '@/components/features/recent-dates';
 import { WishlistWidget } from '@/components/features/wishlist-widget';
+import { SpendingWidget } from '@/components/features/spending-widget';
 import { MilestoneCelebration } from '@/components/features/milestone-celebration';
 import { MilestoneBanner } from '@/components/features/milestone-banner';
 import { useCouple } from '@/hooks/use-couple';
@@ -107,11 +108,10 @@ export default function DashboardPage() {
         <RecentDates />
       </section>
 
-      {/* 6. Wishlist Widget */}
-      <section aria-label="Muốn thử cùng nhau">
-        <div className="max-w-xl">
-          <WishlistWidget />
-        </div>
+      {/* 6. Wishlist & Spending */}
+      <section aria-label="Kế hoạch & Chi tiêu" className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <WishlistWidget />
+        <SpendingWidget />
       </section>
     </div>
   );
