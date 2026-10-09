@@ -1,7 +1,25 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  src: url('/fonts/BeVietnamPro-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  src: url('/fonts/BeVietnamPro-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ===== DESIGN TOKENS ===== */
 :root {
+  --font-be-vietnam: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+
   /* Background & Surface */
   --color-bg: #fdf6f0;
   --color-surface: #ffffff;

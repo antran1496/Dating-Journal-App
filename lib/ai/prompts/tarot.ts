@@ -9,7 +9,7 @@ export const MAJOR_ARCANA: TarotCard[] = [
   { id: 0, name: 'The Fool', nameVi: 'Kẻ Khờ', emoji: '🃏' },
   { id: 1, name: 'The Magician', nameVi: 'Nhà Ảo Thuật', emoji: '🎩' },
   { id: 2, name: 'The High Priestess', nameVi: 'Nữ Tu Sĩ', emoji: '🌙' },
-  { id: 3, name: 'The Empress', nameVi: 'Nữ Hoàng', emoji: '👑' },
+  { id: 3, name: 'The Empress', nameVi: 'Nữ Hoàng', emoji: '👸' },
   { id: 4, name: 'The Emperor', nameVi: 'Hoàng Đế', emoji: '🏰' },
   { id: 5, name: 'The Hierophant', nameVi: 'Giáo Hoàng', emoji: '📿' },
   { id: 6, name: 'The Lovers', nameVi: 'Đôi Tình Nhân', emoji: '💕' },

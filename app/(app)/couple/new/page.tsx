@@ -11,7 +11,7 @@ const RELATIONSHIP_OPTIONS = [
   { value: 'dating', label: '💕 Đang hẹn hò' },
   { value: 'official', label: '❤️ Chính thức' },
   { value: 'engaged', label: '💍 Đã đính hôn' },
-  { value: 'married', label: '👑 Đã kết hôn' },
+  { value: 'married', label: '👰🤵 Đã kết hôn' },
 ];
 
 export default function NewCouplePage() {

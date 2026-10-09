@@ -10,7 +10,7 @@ const RELATIONSHIP_STATUS_LABELS: Record<string, string> = {
   dating: '💕 Đang hẹn hò',
   official: '❤️ Chính thức',
   engaged: '💍 Đã đính hôn',
-  married: '👑 Đã kết hôn',
+  married: '👰🤵 Đã kết hôn',
 };
 
 export function CoupleCounter() {

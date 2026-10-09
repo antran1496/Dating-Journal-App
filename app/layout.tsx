@@ -1,16 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
-
-const beVietnam = Be_Vietnam_Pro({
-  weight: ["400", "500", "600", "700"],
-  subsets: ["vietnamese", "latin"],
-  variable: "--font-be-vietnam",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Dating Journal — Nhật ký tình yêu",
@@ -36,7 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="vi"
-      className={`${beVietnam.variable} h-full antialiased`}
+      className="h-full antialiased"
       suppressHydrationWarning
     >
       <head>

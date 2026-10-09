@@ -26,7 +26,7 @@ export default function WrappedPage() {
   const currentVn = todayVN();
   const currentMonth = currentVn.slice(0, 7);
 
-  // Available periods: current and recent months, plus years
+  // Available periods: current and recent months, and years
   const periods = [
     { id: currentMonth, label: `Tháng này (${currentMonth.slice(5)}/${currentMonth.slice(0, 4)})` },
     { id: '2026', label: 'Cả năm 2026' },
