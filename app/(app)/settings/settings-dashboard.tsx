@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { User, Palette, LogOut, Shield, FileArchive, ChevronRight } from 'lucide-react';
+import { User, Palette, LogOut, Shield, FileArchive, ChevronRight, Bell } from 'lucide-react';
 import type { Profile, CoupleWithMembers } from '@/types';
 import { ProfileClient } from './profile-settings';
 import ThemeSettingsClient from './theme-settings';
@@ -76,6 +76,22 @@ export function SettingsDashboard({ profile, couple, userId }: SettingsDashboard
             <div>
               <span className="font-semibold text-sm text-text block">Riêng tư & bảo mật</span>
               <span className="text-xs text-text-muted">Khoá app PIN, ẩn đa nhiệm, quyền xem dữ liệu</span>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-text-muted group-hover:text-text transition-colors" />
+        </Link>
+
+        <Link
+          href="/settings/notifications"
+          className="flex items-center justify-between p-3.5 rounded-xl bg-surface hover:bg-surface-hover border border-border transition-colors group cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
+              <Bell size={16} />
+            </div>
+            <div>
+              <span className="font-semibold text-sm text-text block">Thông báo đẩy</span>
+              <span className="text-xs text-text-muted">Nhắc nhở cuối tuần, câu hỏi, giờ yên lặng</span>
             </div>
           </div>
           <ChevronRight size={16} className="text-text-muted group-hover:text-text transition-colors" />
