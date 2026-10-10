@@ -21,13 +21,18 @@ function formatDate(dateStr: string | null): string {
 }
 
 export function DateCard({ date, onDelete, className = '' }: DateCardProps) {
+  const rawMedia = (date.media && date.media.length > 0 ? date.media[0] : null)
+    ?? (date as unknown as { date_media?: { id: string; path?: string }[] }).date_media?.[0];
+  const firstMediaId = rawMedia?.id;
+  const thumbnail = rawMedia?.path ?? date.checkin_image_urls?.[0] ?? date.checkin_image_url;
+
   return (
     <Card hoverable className={`group transition-all duration-200 ${className}`}>
-      {(date.media?.[0]?.id || date.checkin_image_url) && (
+      {(firstMediaId || thumbnail) && (
         <div className="overflow-hidden rounded-t-[var(--radius-lg)] h-40 bg-neutral-100 dark:bg-neutral-900">
           <SecureImage
-            mediaId={date.media?.[0]?.id}
-            src={date.checkin_image_url}
+            mediaId={firstMediaId}
+            src={thumbnail}
             size="thumb"
             alt={date.title || date.location_name || 'Buổi hẹn'}
             containerClassName="w-full h-full"

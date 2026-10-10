@@ -48,14 +48,22 @@ export function OnThisDayWidget() {
           onClick={() => router.push(`/dates/${memory.id}`)}
           className="group flex items-center gap-3.5 p-3 rounded-[var(--radius-lg)] bg-surface-hover/60 border border-border/80 hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer"
         >
-          <div className="w-16 h-16 rounded-[var(--radius-md)] overflow-hidden shrink-0 bg-surface border border-border">
-            <SecureImage
-              src={memory.checkin_image_url}
-              alt={memory.title || 'Kỷ niệm'}
-              size="thumb"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-            />
-          </div>
+          {(() => {
+            const rawMedia = (memory.media && memory.media.length > 0 ? memory.media[0] : null)
+              ?? (memory as unknown as { date_media?: { id: string; path?: string }[] }).date_media?.[0];
+            const thumbnail = rawMedia?.path ?? memory.checkin_image_urls?.[0] ?? memory.checkin_image_url;
+            return (
+              <div className="w-16 h-16 rounded-[var(--radius-md)] overflow-hidden shrink-0 bg-surface border border-border">
+                <SecureImage
+                  mediaId={rawMedia?.id}
+                  src={thumbnail}
+                  alt={memory.title || 'Kỷ niệm'}
+                  size="thumb"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                />
+              </div>
+            );
+          })()}
 
           <div className="flex-1 min-w-0">
             <span className="text-[11px] font-semibold text-primary px-2 py-0.5 rounded-full bg-primary/10 inline-block mb-1">

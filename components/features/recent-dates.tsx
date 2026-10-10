@@ -83,7 +83,9 @@ export function RecentDates() {
             : format(new Date(date.created_at), 'dd/MM/yyyy');
 
           const moodEmoji = date.mood ? MOOD_EMOJIS[date.mood] : null;
-          const mediaItem = date.media && date.media.length > 0 ? date.media[0] : null;
+          const rawMedia = (date.media && date.media.length > 0 ? date.media[0] : null)
+            ?? (date as unknown as { date_media?: { id: string; path?: string }[] }).date_media?.[0];
+          const thumbnail = rawMedia?.path ?? date.checkin_image_urls?.[0] ?? date.checkin_image_url;
           const place = date.places && date.places.length > 0 ? date.places[0] : null;
           const location = place?.name || date.location_name;
 
@@ -96,8 +98,8 @@ export function RecentDates() {
               {/* Media Thumbnail */}
               <div className="relative aspect-4/3 w-full bg-surface-hover overflow-hidden">
                 <SecureImage
-                  mediaId={mediaItem?.id}
-                  src={mediaItem ? undefined : date.checkin_image_url}
+                  mediaId={rawMedia?.id}
+                  src={thumbnail}
                   alt={date.title || 'Kỷ niệm'}
                   size="thumb"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

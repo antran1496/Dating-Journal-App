@@ -14,7 +14,7 @@ export async function getDates(
 
   const { data, error } = await supabase
     .from('dates')
-    .select('*, date_places(*), date_media(*)')
+    .select('*, places:date_places(*), media:date_media(*), date_places(*), date_media(*)')
     .eq('couple_id', coupleId)
     .order('date_time', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
@@ -25,7 +25,17 @@ export async function getDates(
     return [];
   }
 
-  return (data ?? []) as DateEntry[];
+  const mapped = (data ?? []).map((entry) => ({
+    ...entry,
+    media: (entry as Record<string, unknown>).media && ((entry as Record<string, unknown>).media as unknown[]).length
+      ? (entry as Record<string, unknown>).media
+      : (entry as Record<string, unknown>).date_media || [],
+    places: (entry as Record<string, unknown>).places && ((entry as Record<string, unknown>).places as unknown[]).length
+      ? (entry as Record<string, unknown>).places
+      : (entry as Record<string, unknown>).date_places || [],
+  }));
+
+  return mapped as DateEntry[];
 }
 
 export async function getCalendarDates(
@@ -52,7 +62,7 @@ export async function getDateById(
 ): Promise<DateEntry | null> {
   const { data, error } = await supabase
     .from('dates')
-    .select('*, date_places(*), date_media(*)')
+    .select('*, places:date_places(*), media:date_media(*), date_places(*), date_media(*)')
     .eq('id', id)
     .maybeSingle();
 
@@ -73,8 +83,14 @@ export async function getDateById(
     supabase.from('date_views').select('*, profile:profiles(*)').eq('date_id', id),
   ]);
 
+  const raw = data as Record<string, unknown>;
+  const mediaList = raw.media && (raw.media as unknown[]).length ? raw.media : raw.date_media || [];
+  const placesList = raw.places && (raw.places as unknown[]).length ? raw.places : raw.date_places || [];
+
   return {
     ...data,
+    media: mediaList,
+    places: placesList,
     reactions: reactions || [],
     comments: comments || [],
     views: views || [],

@@ -93,8 +93,10 @@ export function DatesInfiniteList({ coupleId, filters }: DatesInfiniteListProps)
   return (
     <div className="flex flex-col gap-3.5">
       {displayDates.map((date) => {
-        const firstMediaId = date.media?.[0]?.id;
-        const thumbnail = date.checkin_image_urls?.[0] ?? date.checkin_image_url;
+        const rawMedia = (date.media && date.media.length > 0 ? date.media[0] : null)
+          ?? (date as unknown as { date_media?: { id: string; path?: string }[] }).date_media?.[0];
+        const firstMediaId = rawMedia?.id;
+        const thumbnail = rawMedia?.path ?? date.checkin_image_urls?.[0] ?? date.checkin_image_url;
         const moodEmoji = date.mood ? MOOD_EMOJIS[date.mood] : null;
 
         return (
