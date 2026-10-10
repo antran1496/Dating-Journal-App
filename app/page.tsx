@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import {
   LandingNav,
@@ -22,13 +23,15 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const session = await auth();
-  const isAuthed = !!session?.user?.id;
+  if (session?.user?.id) {
+    redirect('/dashboard');
+  }
 
   return (
     <div className="min-h-screen bg-bg text-text flex flex-col font-body antialiased selection:bg-primary/20 selection:text-primary">
-      <LandingNav isAuthed={isAuthed} />
+      <LandingNav isAuthed={false} />
       <main className="flex-1">
-        <LandingHero isAuthed={isAuthed} />
+        <LandingHero isAuthed={false} />
         <LandingFeatures />
         <LandingPrivacy />
         <LandingSteps />

@@ -7,6 +7,7 @@ import { signIn } from 'next-auth/react';
 interface GoogleSignInButtonProps {
   label?: string;
   disabled?: boolean;
+  callbackUrl?: string;
   onError?: (message: string) => void;
 }
 
@@ -37,6 +38,7 @@ function GoogleIcon() {
 export function GoogleSignInButton({
   label = 'Tiếp tục với Google',
   disabled = false,
+  callbackUrl = '/dashboard',
   onError,
 }: GoogleSignInButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +46,7 @@ export function GoogleSignInButton({
   const handleClick = async () => {
     setIsLoading(true);
     try {
-      await signIn('google', { callbackUrl: '/dashboard' });
+      await signIn('google', { callbackUrl });
     } catch {
       onError?.('Không thể kết nối Google. Vui lòng thử lại');
       setIsLoading(false);

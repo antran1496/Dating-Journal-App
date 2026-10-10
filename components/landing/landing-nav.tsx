@@ -37,7 +37,7 @@ export function LandingNav({ isAuthed = false }: LandingNavProps) {
                 Đăng nhập
               </Link>
               <Link
-                href="/login?signup=1"
+                href="/signup"
                 className="inline-flex items-center justify-center h-9 px-4 text-sm font-medium rounded-[var(--radius-md)] bg-primary text-primary-fg hover:bg-primary-hover shadow-sm transition-colors"
               >
                 Bắt đầu

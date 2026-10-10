@@ -100,6 +100,7 @@ export default function SignupPage({ searchParams }: SignupPageProps) {
         <GoogleSignInButton
           label="Đăng ký với Google"
           disabled={isLoading}
+          callbackUrl={nextUrl}
           onError={setError}
         />
         <AppleSignInButton

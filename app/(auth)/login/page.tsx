@@ -137,6 +137,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
         <GoogleSignInButton
           label="Tiếp tục với Google"
           disabled={isPasswordLoading || isMagicLoading}
+          callbackUrl={nextUrl}
           onError={setError}
         />
         <AppleSignInButton

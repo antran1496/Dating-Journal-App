@@ -14,9 +14,11 @@ const APP_ROUTES = [
   '/daily',
   '/spending',
   '/map',
-  '/capsule',
+  '/capsules',
   '/quiz',
   '/wrapped',
+  '/wishlist',
+  '/onboarding',
 ];
 
 export async function proxy(request: NextRequest) {
@@ -32,11 +34,17 @@ export async function proxy(request: NextRequest) {
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
   const isAppPage = APP_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));
 
+  // 1. Chưa đăng nhập mà truy cập trang ứng dụng -> chuyển hướng sang /login kèm ?next=
   if (isAppPage && !isAuthed) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    if (pathname !== '/dashboard') {
+      url.searchParams.set('next', pathname);
+    }
     return NextResponse.redirect(url);
   }
+
+  // 2. Đã đăng nhập mà truy cập trang auth (/login, /signup) -> chuyển hướng sang /dashboard
   if (isAuthPage && isAuthed) {
     const url = request.nextUrl.clone();
     const next = request.nextUrl.searchParams.get('next');
@@ -44,6 +52,14 @@ export async function proxy(request: NextRequest) {
     url.search = '';
     return NextResponse.redirect(url);
   }
+
+  // 3. Đã có tài khoản / phiên đăng nhập mà vào trang root (/) -> chuyển thẳng vào trang chủ /dashboard
+  if (pathname === '/' && isAuthed) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
 

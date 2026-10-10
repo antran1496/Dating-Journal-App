@@ -17,16 +17,23 @@ export function CoupleGuard({
   const isClient = useIsClient();
 
   const isCoupleSetupRoute = pathname.startsWith('/couple');
+  const isSetupActionRoute = pathname === '/couple/setup' || pathname === '/couple/new' || pathname === '/couple/join';
 
   useEffect(() => {
     if (!isClient) return;
     if (!couple && !isCoupleSetupRoute) {
       router.replace('/couple/setup');
+    } else if (couple && isSetupActionRoute) {
+      router.replace('/dashboard');
     }
-  }, [couple, isCoupleSetupRoute, router, isClient]);
+  }, [couple, isCoupleSetupRoute, isSetupActionRoute, router, isClient]);
 
   if (!couple && !isCoupleSetupRoute) {
     return null; // Return null to prevent flicker
+  }
+
+  if (couple && isSetupActionRoute) {
+    return null;
   }
 
   return <>{children}</>;

@@ -43,7 +43,7 @@ export function LandingHero({ isAuthed = false }: LandingHeroProps) {
                 </Link>
               ) : (
                 <Link
-                  href="/login?signup=1"
+                  href="/signup"
                   className="inline-flex items-center justify-center h-12 px-7 text-base font-semibold rounded-[var(--radius-lg)] bg-primary text-primary-fg hover:bg-primary-hover shadow-[var(--shadow-glow)] transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Tạo không gian của hai bạn
