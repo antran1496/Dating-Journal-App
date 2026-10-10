@@ -36,7 +36,7 @@ export function CoupleCounter() {
   const progress = nextM ? calculateMilestoneProgress(nextM, daysCount) : 0;
 
   return (
-    <div className="relative rounded-[var(--radius-xl)] overflow-hidden bg-gradient-to-br from-primary via-primary/95 to-accent p-6 md:p-8 text-white shadow-[var(--shadow-elevated)] flex flex-col gap-5">
+    <div className="relative rounded-[var(--radius-xl)] overflow-hidden bg-gradient-to-br from-primary via-primary/95 to-accent p-4 sm:p-6 md:p-8 text-white shadow-[var(--shadow-elevated)] flex flex-col gap-3.5 sm:gap-5">
       {/* Background ambient blobs */}
       <div className="pointer-events-none absolute -right-16 -top-16 w-56 h-56 rounded-full bg-white/10 blur-3xl" />
       <div className="pointer-events-none absolute left-1/3 -bottom-12 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
@@ -60,32 +60,32 @@ export function CoupleCounter() {
         <span className="text-xs sm:text-sm font-medium text-white/90 tracking-wide">
           Câu chuyện tình yêu của chúng ta
         </span>
-        <span className="px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold text-white border border-white/25 shadow-sm">
+        <span className="px-3 py-0.5 sm:px-3.5 sm:py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold text-white border border-white/25 shadow-sm">
           {statusLabel}
         </span>
       </div>
 
-      {/* Center: Avatars + Big day count */}
-      <div className="relative z-10 flex items-end gap-4 sm:gap-6">
+      {/* Center: Avatars (left) + Big day count (right) */}
+      <div className="relative z-10 flex items-end justify-between gap-3 sm:gap-6">
         {/* Avatars */}
-        <div className="flex items-center -space-x-3.5 shrink-0 mb-1">
+        <div className="flex items-center -space-x-2.5 sm:-space-x-3.5 shrink-0 mb-1">
           {members.map((m, idx) => (
             <Avatar
               key={m.profile_id}
               src={m.profile?.avatar_url ?? undefined}
               name={m.profile?.display_name ?? `U${idx + 1}`}
               size="lg"
-              className="ring-3 ring-white/80 shadow-md"
+              className="ring-2 sm:ring-3 ring-white/80 shadow-md w-11 h-11 sm:w-14 sm:h-14"
             />
           ))}
         </div>
 
-        {/* Day count */}
-        <div className="min-w-0 flex-1">
-          <div className="text-5xl sm:text-6xl md:text-7xl font-heading font-extrabold tracking-tight leading-none text-white drop-shadow-sm">
+        {/* Day count aligned to right */}
+        <div className="min-w-0 flex-1 text-right">
+          <div className="text-4xl sm:text-6xl md:text-7xl font-heading font-extrabold tracking-tight leading-none text-white drop-shadow-sm">
             {daysCount !== null ? daysCount.toLocaleString('vi-VN') : '—'}
           </div>
-          <div className="text-sm sm:text-base font-semibold text-white/90 mt-1.5">
+          <div className="text-xs sm:text-base font-semibold text-white/90 mt-1 sm:mt-1.5">
             {daysCount === 0 ? 'Hôm nay là ngày đầu tiên 🎉' : 'ngày bên nhau'}
           </div>
         </div>
@@ -93,7 +93,7 @@ export function CoupleCounter() {
 
       {/* Names & Nicknames */}
       {members.length > 0 && (
-        <div className="relative z-10 text-sm sm:text-base text-white/95 font-medium leading-relaxed">
+        <div className="relative z-10 text-xs sm:text-base text-white/95 font-medium leading-relaxed">
           {members.map((m, i) => {
             const name = m.profile?.display_name || 'Người ấy';
             const nickname = m.nickname?.trim();

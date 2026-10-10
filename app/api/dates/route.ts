@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('dates')
-      .select('*, date_places(*), date_media(*)', { count: 'exact' })
+      .select('*, places:date_places(*), media:date_media(*), date_places(*), date_media(*)', { count: 'exact' })
       .eq('couple_id', coupleId)
       .order('date_time', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false });
@@ -52,6 +52,21 @@ export async function GET(request: NextRequest) {
       query = query.or(`title.ilike.%${term}%,note.ilike.%${term}%,location_name.ilike.%${term}%`);
     }
 
+    // Helper mapper to ensure both 'media' and 'places' are reliably populated
+    const mapEntry = (entry: Record<string, unknown>) => {
+      const mediaList = (entry.media as unknown[])?.length
+        ? entry.media
+        : entry.date_media || [];
+      const placesList = (entry.places as unknown[])?.length
+        ? entry.places
+        : entry.date_places || [];
+      return {
+        ...entry,
+        media: mediaList,
+        places: placesList,
+      };
+    };
+
     if (pageParam || limitParam) {
       const page = Math.max(1, parseInt(pageParam || '1', 10));
       const limit = Math.max(1, parseInt(limitParam || '20', 10));
@@ -66,8 +81,9 @@ export async function GET(request: NextRequest) {
       }
 
       const total = count ?? 0;
+      const mappedData = (data ?? []).map((d) => mapEntry(d as Record<string, unknown>));
       return NextResponse.json({
-        data: data ?? [],
+        data: mappedData,
         total,
         page,
         limit,
@@ -81,7 +97,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data: data ?? [] });
+    const mappedData = (data ?? []).map((d) => mapEntry(d as Record<string, unknown>));
+    return NextResponse.json({ data: mappedData });
   } catch (error: unknown) {
     console.error('[GET /api/dates exception]', error);
     const msg = error instanceof Error ? error.message : 'Lỗi server';

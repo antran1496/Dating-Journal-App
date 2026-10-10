@@ -103,10 +103,12 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* 5. Recent Memories */}
+      {/* 5. Recent Memories (tạm ẩn theo yêu cầu người dùng) */}
+      {/*
       <section aria-label="Kỷ niệm gần đây" className="pt-2">
         <RecentDates />
       </section>
+      */}
 
       {/* 6. Wishlist & Spending */}
       <section aria-label="Kế hoạch & Chi tiêu" className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
