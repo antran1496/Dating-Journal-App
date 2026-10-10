@@ -52,6 +52,7 @@ Skill này tự động hóa quy trình commit và push code bằng Git, tuân t
 
 ### 6. Push (Mặc định)
 - Nếu user chỉ yêu cầu "commit", có thể dừng ở bước 5. Nếu yêu cầu "đẩy code", "push git" -> Chạy `git push origin <tên_nhánh>`.
+- ⚠️ **QUY TẮC BẢO VỆ NHÁNH `main`:** TUYỆT ĐỐI KHÔNG tự ý merge hay push trực tiếp vào nhánh `main` nếu người dùng chưa yêu cầu rõ ràng. Mọi commit và push mặc định chỉ thực hiện trên nhánh feature/fix riêng.
 - **Quan trọng:** Phải chạy lệnh push ở chế độ **Bypass Sandbox (BypassSandbox: true)** để đảm bảo có kết nối mạng tới Github.
 
 ### 7. Tổng kết (Bắt buộc)
