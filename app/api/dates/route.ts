@@ -141,13 +141,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Không có quyền ghi vào couple này' }, { status: 403 });
     }
 
+    // Resolve paid_by UUID if 'me' or 'partner' was passed
+    let resolvedPaidBy: string | null = null;
+    if (input.paid_by === 'me') {
+      resolvedPaidBy = user.id;
+    } else if (input.paid_by === 'partner') {
+      const { data: partnerMember } = await supabase
+        .from('couple_members')
+        .select('profile_id')
+        .eq('couple_id', input.couple_id)
+        .neq('profile_id', user.id)
+        .maybeSingle();
+      resolvedPaidBy = partnerMember?.profile_id ?? null;
+    } else if (input.paid_by && /^[0-9a-f-]{36}$/i.test(input.paid_by)) {
+      resolvedPaidBy = input.paid_by;
+    }
+
+    // Sanitize client_id to ensure it's a valid UUID for Postgres
+    const safeClientId =
+      input.client_id && /^[0-9a-f-]{36}$/i.test(input.client_id) ? input.client_id : null;
+
     // Idempotent by client_id if provided
-    if (input.client_id) {
+    if (safeClientId) {
       const { data: existing } = await supabase
         .from('dates')
         .select('*, date_places(*), date_media(*)')
         .eq('couple_id', input.couple_id)
-        .eq('client_id', input.client_id)
+        .eq('client_id', safeClientId)
         .maybeSingle();
 
       if (existing) {
@@ -167,7 +187,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine primary place & media for backwards-compatible columns
-    const primaryPlace = input.places?.[0];
+    const validPlaces = (input.places || []).filter((p) => p.name && p.name.trim().length > 0);
+    const primaryPlace = validPlaces[0];
     const locationName = primaryPlace?.name ?? input.location_name ?? null;
     const locationLat = primaryPlace?.lat ?? input.location_lat ?? null;
     const locationLng = primaryPlace?.lng ?? input.location_lng ?? null;
@@ -192,11 +213,11 @@ export async function POST(request: NextRequest) {
       location_lat: locationLat,
       location_lng: locationLng,
       spend_vnd: input.spend_vnd ?? null,
-      paid_by: input.paid_by ?? null,
+      paid_by: resolvedPaidBy,
       paid_split: input.paid_split ?? false,
       song: input.song ?? null,
       tags: input.tags ?? [],
-      client_id: input.client_id ?? null,
+      client_id: safeClientId,
       rating: input.rating ?? null,
       pros: input.pros ?? null,
       cons: input.cons ?? null,
@@ -222,10 +243,10 @@ export async function POST(request: NextRequest) {
     const dateId = createdDate.id;
 
     // Insert places if present
-    if (input.places && input.places.length > 0) {
-      const placesRows = input.places.map((p, idx) => ({
+    if (validPlaces.length > 0) {
+      const placesRows = validPlaces.map((p, idx) => ({
         date_id: dateId,
-        name: p.name,
+        name: p.name.trim(),
         lat: p.lat ?? null,
         lng: p.lng ?? null,
         area_label: p.area_label ?? null,

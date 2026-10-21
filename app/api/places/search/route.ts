@@ -61,33 +61,69 @@ export async function GET(request: NextRequest) {
 
   try {
     let results: PlaceResult[] = [];
+    const googleMapsKey =
+      process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     const goongKey = process.env.GOONG_API_KEY;
 
-    if (goongKey) {
-      // Goong Place Autocomplete
-      const res = await fetch(
-        `https://rsapi.goong.io/Place/AutoComplete?api_key=${encodeURIComponent(
-          goongKey
-        )}&input=${encodeURIComponent(query)}&limit=8`
-      );
-      if (res.ok) {
-        const json = await res.json();
-        const predictions = (json.predictions || []) as Array<{
-          description: string;
-          structured_formatting?: { main_text?: string; secondary_text?: string };
-        }>;
-        results = predictions.map((p) => ({
-          name: p.structured_formatting?.main_text || p.description,
-          lat: null, // Goong AutoComplete requires separate Place Detail call if coordinates needed
-          lng: null,
-          area_label: p.structured_formatting?.secondary_text || null,
-        }));
+    // 1. Google Places Autocomplete API (if configured)
+    if (googleMapsKey) {
+      try {
+        const res = await fetch(
+          `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
+            query
+          )}&components=country:vn&language=vi&key=${encodeURIComponent(googleMapsKey)}`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          const predictions = (json.predictions || []) as Array<{
+            description: string;
+            structured_formatting?: { main_text?: string; secondary_text?: string };
+          }>;
+          results = predictions.map((p) => ({
+            name: p.structured_formatting?.main_text || p.description,
+            lat: null,
+            lng: null,
+            area_label: p.structured_formatting?.secondary_text || null,
+          }));
+        }
+      } catch (gErr) {
+        console.warn('Google Places search error, falling back:', gErr);
       }
-    } else {
-      // 1. Try Photon first (fast POI autocomplete with prefix matching)
+    }
+
+    // 2. Goong Place Autocomplete (if configured)
+    if (results.length === 0 && goongKey) {
+      try {
+        const res = await fetch(
+          `https://rsapi.goong.io/Place/AutoComplete?api_key=${encodeURIComponent(
+            goongKey
+          )}&input=${encodeURIComponent(query)}&limit=8`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          const predictions = (json.predictions || []) as Array<{
+            description: string;
+            structured_formatting?: { main_text?: string; secondary_text?: string };
+          }>;
+          results = predictions.map((p) => ({
+            name: p.structured_formatting?.main_text || p.description,
+            lat: null,
+            lng: null,
+            area_label: p.structured_formatting?.secondary_text || null,
+          }));
+        }
+      } catch (goongErr) {
+        console.warn('Goong search error, falling back:', goongErr);
+      }
+    }
+
+    // 3. Photon API with Vietnam Bounding Box & Coordinates Bias
+    if (results.length === 0) {
       try {
         const photonRes = await fetch(
-          `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=10&lang=default`,
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(
+            query
+          )}&lat=10.7769&lon=106.7009&bbox=102.14,8.18,109.46,23.39&limit=8&lang=default`,
           { headers: { 'Accept-Language': 'vi,en;q=0.9' } }
         );
         if (photonRes.ok) {
@@ -106,43 +142,51 @@ export async function GET(request: NextRequest) {
             };
           }>;
 
+          // Strictly filter Vietnam locations only
           const vnFeatures = features.filter((f) => {
             const p = f.properties || {};
-            if (p.country && /việt nam|vietnam/i.test(p.country)) return true;
             const coords = f.geometry?.coordinates;
-            if (coords && coords[0] >= 102 && coords[0] <= 110 && coords[1] >= 8 && coords[1] <= 24) return true;
-            return !p.country;
+            const isVnCoords =
+              coords &&
+              coords[0] >= 102 &&
+              coords[0] <= 110 &&
+              coords[1] >= 8 &&
+              coords[1] <= 24;
+            const isVnCountry = p.country && /việt nam|vietnam|vn/i.test(p.country);
+            return isVnCoords || isVnCountry;
           });
 
-          if (vnFeatures.length > 0) {
-            results = vnFeatures.map((f) => {
-              const p = f.properties || {};
-              const coords = f.geometry?.coordinates;
-              const addrParts = [
-                p.housenumber,
-                p.street,
-                p.district || p.suburb,
-                p.city || p.state,
-              ].filter(Boolean);
-              return {
-                name: p.name || addrParts[0] || query,
-                lat: coords ? coords[1] : null,
-                lng: coords ? coords[0] : null,
-                area_label: addrParts.length > 0 ? addrParts.join(', ') : (p.city || p.state || null),
-              };
+          vnFeatures.forEach((f) => {
+            const p = f.properties || {};
+            const coords = f.geometry?.coordinates;
+            const streetAddr = [p.housenumber, p.street].filter(Boolean).join(' ');
+            const mainTitle = p.name || streetAddr || query;
+            const secondaryParts = [
+              p.name && streetAddr ? streetAddr : null,
+              p.district || p.suburb,
+              p.city || p.state,
+            ].filter(Boolean);
+
+            results.push({
+              name: mainTitle,
+              lat: coords ? coords[1] : null,
+              lng: coords ? coords[0] : null,
+              area_label: secondaryParts.length > 0 ? secondaryParts.join(', ') : (p.city || p.state || null),
             });
-          }
+          });
         }
       } catch (photonErr) {
-        console.warn('Photon search error, falling back to Nominatim:', photonErr);
+        console.warn('Photon search error:', photonErr);
       }
+    }
 
-      // 2. Fallback to Nominatim if Photon returned no results
-      if (results.length === 0) {
-        const res = await fetch(
+    // 4. Complement / Fallback with OpenStreetMap Nominatim (Vietnam strictly)
+    if (results.length < 5) {
+      try {
+        const nomRes = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(
             query
-          )}&countrycodes=vn&limit=8`,
+          )}&countrycodes=vn&limit=6`,
           {
             headers: {
               'User-Agent': 'DatingJournalApp/2.0 (contact@datingjournal.app)',
@@ -151,29 +195,46 @@ export async function GET(request: NextRequest) {
           }
         );
 
-        if (res.ok) {
-          const items = (await res.json()) as Array<{
+        if (nomRes.ok) {
+          const items = (await nomRes.json()) as Array<{
             lat?: string;
             lon?: string;
             name?: string;
             display_name: string;
             address?: Record<string, string | undefined>;
           }>;
-          results = items.map((item) => {
-            const parts = item.display_name.split(',').map((s) => s.trim());
-            const mainName = item.name || parts[0];
-            const secondaryParts = parts
-              .slice(1)
-              .filter((p) => p !== 'Việt Nam' && !/^\d{5,6}$/.test(p));
 
-            return {
-              name: mainName,
-              lat: item.lat ? parseFloat(item.lat) : null,
-              lng: item.lon ? parseFloat(item.lon) : null,
-              area_label: secondaryParts.length > 0 ? secondaryParts.join(', ') : null,
-            };
+          items.forEach((item) => {
+            const addr = item.address || {};
+            const streetAddr = [
+              addr.house_number,
+              addr.road || addr.street || addr.pedestrian,
+            ]
+              .filter(Boolean)
+              .join(' ');
+            const mainTitle = item.name || streetAddr || item.display_name.split(',')[0].trim();
+            const secondaryParts = [
+              item.name && streetAddr ? streetAddr : null,
+              addr.suburb || addr.quarter || addr.neighbourhood || addr.ward,
+              addr.city_district || addr.district || addr.county,
+              addr.city || addr.state || addr.province,
+            ].filter(Boolean);
+
+            const areaLabel = secondaryParts.length > 0 ? secondaryParts.join(', ') : null;
+
+            // Avoid adding duplicates
+            if (!results.some((r) => r.name.toLowerCase() === mainTitle.toLowerCase())) {
+              results.push({
+                name: mainTitle,
+                lat: item.lat ? parseFloat(item.lat) : null,
+                lng: item.lon ? parseFloat(item.lon) : null,
+                area_label: areaLabel,
+              });
+            }
           });
         }
+      } catch (nomErr) {
+        console.warn('Nominatim search error:', nomErr);
       }
     }
 

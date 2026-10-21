@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Loader2, MapPin, Tag } from 'lucide-react';
-import { useInfiniteDates, type DateFilters } from '@/hooks/use-dates';
+import { useInfiniteDates, type DateFilters, type DatesPageResult } from '@/hooks/use-dates';
 import { DatesEmptyState } from '@/components/features/dates-empty-state';
 import { SecureImage } from '@/components/features/secure-image';
 import type { DateEntry } from '@/types';
@@ -87,7 +87,10 @@ export function DatesInfiniteList({ coupleId, filters }: DatesInfiniteListProps)
   const displayDates = data?.pages
     ? data.pages.flatMap((page) => (Array.isArray(page) ? page : page.data || []))
     : [];
-  const totalCount = data?.pages?.[0]?.total ?? displayDates.length;
+  const firstPageWithTotal = data?.pages?.find(
+    (p) => typeof (p as DatesPageResult)?.total === 'number'
+  ) as DatesPageResult | undefined;
+  const totalCount = firstPageWithTotal?.total ?? displayDates.length;
 
   if (displayDates.length === 0) {
     return <DatesEmptyState />;

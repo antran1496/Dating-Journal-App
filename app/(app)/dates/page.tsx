@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { DatesInfiniteList } from '@/components/features/dates-infinite-list';
 import { OfflineDraftsBanner } from '@/components/features/offline-drafts-banner';
 import { useCouple } from '@/hooks/use-couple';
-import { useInfiniteDates } from '@/hooks/use-dates';
+import { useInfiniteDates, type DatesPageResult } from '@/hooks/use-dates';
 import type { DateMood } from '@/types';
 
 const MOOD_FILTERS: { id: DateMood; label: string; emoji: string }[] = [
@@ -41,7 +41,12 @@ export default function DatesPage() {
   };
 
   const { data } = useInfiniteDates(couple?.id, activeFilters);
-  const totalCount = data?.pages?.[0]?.total ?? (data?.pages ? data.pages.flatMap((p) => (Array.isArray(p) ? p : p.data)).length : 0);
+  const firstPageWithTotal = data?.pages?.find(
+    (p) => typeof (p as DatesPageResult)?.total === 'number'
+  ) as DatesPageResult | undefined;
+  const totalCount =
+    firstPageWithTotal?.total ??
+    (data?.pages ? data.pages.flatMap((p) => (Array.isArray(p) ? p : p.data || [])).length : 0);
 
   if (isLoadingCouple) {
     return <div className="p-8 text-center text-text-muted">Đang tải dữ liệu...</div>;

@@ -13,7 +13,7 @@ import {
   Loader2,
   Trash2,
 } from 'lucide-react';
-import type { DateEntry, DateMood } from '@/types';
+import type { DateEntry, DateMood, DatePlace } from '@/types';
 import type {
   DateFormValues,
   DatePlaceInput,
@@ -32,9 +32,13 @@ export interface CreateDatePayload extends DateFormValues {
   checkin_image_urls?: string[];
 }
 
+export type DateFormDefaultValues = Omit<Partial<DateEntry>, 'places'> & {
+  places?: (DatePlaceInput | Partial<DatePlace>)[];
+};
+
 interface DateFormProps {
   coupleId?: string;
-  defaultValues?: Partial<DateEntry>;
+  defaultValues?: DateFormDefaultValues;
   onSubmit: (values: CreateDatePayload) => Promise<void>;
   onCancel?: () => void;
   isLoading?: boolean;
@@ -120,7 +124,7 @@ export function DateForm({ coupleId, defaultValues, onSubmit, onCancel, isLoadin
   const [places, setPlaces] = useState<DatePlaceInput[]>(() => {
     if (defaultValues?.places && defaultValues.places.length > 0) {
       return defaultValues.places.map((p) => ({
-        name: p.name,
+        name: p.name || '',
         lat: p.lat ?? null,
         lng: p.lng ?? null,
         area_label: p.area_label ?? null,
@@ -168,7 +172,7 @@ export function DateForm({ coupleId, defaultValues, onSubmit, onCancel, isLoadin
   });
 
   // Ghi chú thêm (giữ lại từ field pros cũ)
-  const [pros, setPros] = useState<string>(defaultValues?.pros ?? '');
+  const [pros, setPros] = useState<string>(defaultValues?.pros ?? defaultValues?.note ?? '');
 
   // Validation & Submit State
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -401,7 +405,8 @@ export function DateForm({ coupleId, defaultValues, onSubmit, onCancel, isLoadin
       console.warn('[DateForm Submit Error]', err);
       const isNetworkError =
         typeof navigator !== 'undefined' &&
-        (!navigator.onLine || (err instanceof Error && /network|fetch|kết nối|mạng|failed/i.test(err.message)));
+        (!navigator.onLine ||
+          (err instanceof TypeError && /failed to fetch|networkerror|load failed/i.test(err.message)));
 
       if (isNetworkError) {
         try {

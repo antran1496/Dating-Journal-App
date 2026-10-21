@@ -131,9 +131,23 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (input.mood !== undefined) updateFields.mood = input.mood;
     if (input.date_time !== undefined) updateFields.date_time = input.date_time;
     if (input.end_date !== undefined) updateFields.end_date = input.end_date;
-    if (input.spend_vnd !== undefined) updateFields.spend_vnd = input.spend_vnd;
-    if (input.paid_by !== undefined) updateFields.paid_by = input.paid_by;
-    if (input.paid_split !== undefined) updateFields.paid_split = input.paid_split;
+    if (input.paid_by !== undefined) {
+      if (input.paid_by === 'me') {
+        updateFields.paid_by = user.id;
+      } else if (input.paid_by === 'partner') {
+        const { data: partnerMember } = await supabase
+          .from('couple_members')
+          .select('profile_id')
+          .eq('couple_id', existingDate.couple_id)
+          .neq('profile_id', user.id)
+          .maybeSingle();
+        updateFields.paid_by = partnerMember?.profile_id ?? null;
+      } else if (input.paid_by && /^[0-9a-f-]{36}$/i.test(input.paid_by)) {
+        updateFields.paid_by = input.paid_by;
+      } else {
+        updateFields.paid_by = null;
+      }
+    }
     if (input.song !== undefined) updateFields.song = input.song;
     if (input.tags !== undefined) updateFields.tags = input.tags;
     if (input.rating !== undefined) updateFields.rating = input.rating;
