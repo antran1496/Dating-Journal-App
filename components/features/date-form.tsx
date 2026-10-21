@@ -8,10 +8,7 @@ import {
   Plus,
   MapPin,
   Calendar,
-  Music,
   Coins,
-  ChevronDown,
-  ChevronUp,
   Lock,
   Loader2,
   Trash2,
@@ -36,6 +33,7 @@ export interface CreateDatePayload extends DateFormValues {
 }
 
 interface DateFormProps {
+  coupleId?: string;
   defaultValues?: Partial<DateEntry>;
   onSubmit: (values: CreateDatePayload) => Promise<void>;
   onCancel?: () => void;
@@ -68,7 +66,7 @@ interface UploadingMediaItem {
   error?: string;
 }
 
-export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateFormProps) {
+export function DateForm({ coupleId, defaultValues, onSubmit, onCancel, isLoading }: DateFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -117,7 +115,6 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
 
   const [mood, setMood] = useState<DateMood | undefined>(defaultValues?.mood ?? undefined);
   const [note, setNote] = useState<string>(defaultValues?.note ?? '');
-  const [title, setTitle] = useState<string>(defaultValues?.title ?? '');
 
   // Places
   const [places, setPlaces] = useState<DatePlaceInput[]>(() => {
@@ -159,9 +156,8 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
 
   // Tags
   const [tags, setTags] = useState<string[]>(defaultValues?.tags ?? []);
-  const [customTagInput, setCustomTagInput] = useState<string>('');
 
-  // Spend & Payer
+  // Spend & Payer (Formatted with VND dots)
   const [spendVnd, setSpendVnd] = useState<string>(() => {
     return defaultValues?.spend_vnd ? String(defaultValues.spend_vnd) : '';
   });
@@ -171,26 +167,24 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
     return 'me';
   });
 
-  // Song
-  const [song, setSong] = useState<string>(defaultValues?.song ?? '');
-
-  // Collapsible Extra Details
-  const [showDetails, setShowDetails] = useState<boolean>(
-    Boolean(
-      defaultValues?.pros ||
-        defaultValues?.cons ||
-        defaultValues?.wish_next_time ||
-        defaultValues?.rating
-    )
-  );
+  // Ghi chú thêm (giữ lại từ field pros cũ)
   const [pros, setPros] = useState<string>(defaultValues?.pros ?? '');
-  const [cons, setCons] = useState<string>(defaultValues?.cons ?? '');
-  const [wishNextTime, setWishNextTime] = useState<string>(defaultValues?.wish_next_time ?? '');
-  const [rating, setRating] = useState<number>(defaultValues?.rating ?? 0);
 
   // Validation & Submit State
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Helper for VND formatting
+  const formatVndDisplay = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) return '';
+    return Number(digits).toLocaleString('vi-VN');
+  };
+
+  const handleSpendChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '');
+    setSpendVnd(digits);
+  };
 
   // Upload handler for files
   const handleFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -234,7 +228,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
     setMediaList((prev) => [...prev, ...newItems]);
     if (fileInputRef.current) fileInputRef.current.value = '';
 
-    // Upload items in background (concurrency <= 3)
+    // Upload items in background
     for (const item of newItems) {
       uploadSingleMedia(item);
     }
@@ -243,7 +237,6 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
   const uploadSingleMedia = async (item: UploadingMediaItem) => {
     try {
       const uploadFile = item.file;
-      const thumbPath: string | undefined = undefined;
       let width: number | undefined = undefined;
       let height: number | undefined = undefined;
       let duration_s: number | undefined = undefined;
@@ -260,8 +253,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
         }
       } else {
         try {
-          const thumbFile = await makeThumbnail(item.file);
-          // Pre-upload thumbnail if needed
+          await makeThumbnail(item.file);
         } catch {
           // Fallback
         }
@@ -344,14 +336,21 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
     e.preventDefault();
     setErrorMessage(null);
 
-    // Rule: Must have at least 1 media OR note
+    const activeCoupleId = coupleId || defaultValues?.couple_id;
+    if (!activeCoupleId) {
+      setErrorMessage('Chưa có thông tin cặp đôi. Vui lòng tải lại trang.');
+      return;
+    }
+
+    // Rule: Must have at least 1 media OR note OR location OR pros
     const validPlaces = places.filter((p) => p.name.trim().length > 0);
     const hasMedia = mediaList.length > 0;
     const hasNote = note.trim().length > 0;
     const hasLocation = validPlaces.length > 0;
+    const hasPros = pros.trim().length > 0;
 
-    if (!hasMedia && !hasNote && !hasLocation && !pros.trim()) {
-      setErrorMessage('Cần ít nhất một ảnh/video hoặc một dòng ghi chú để lưu kỷ niệm 💕');
+    if (!hasMedia && !hasNote && !hasLocation && !hasPros) {
+      setErrorMessage('Cần ít nhất một ảnh/video, địa điểm hoặc một dòng ghi chú để lưu kỷ niệm 💕');
       return;
     }
 
@@ -377,10 +376,9 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
         position: idx,
       }));
 
-    const parsedSpend = spendVnd.trim() ? Number(spendVnd.replace(/[^0-9]/g, '')) : null;
+    const parsedSpend = spendVnd.trim() ? Number(spendVnd.replace(/\D/g, '')) : null;
 
     const payload: CreateDatePayload = {
-      title: title.trim() || undefined,
       note: note.trim() || undefined,
       mood: mood || undefined,
       date_time: dateTime || undefined,
@@ -392,11 +390,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
       spend_vnd: parsedSpend,
       paid_by: payerType === 'split' ? null : payerType,
       paid_split: payerType === 'split',
-      song: song.trim() || undefined,
       pros: pros.trim() || undefined,
-      cons: cons.trim() || undefined,
-      wish_next_time: wishNextTime.trim() || undefined,
-      rating: rating > 0 ? rating : undefined,
       checkin_image_url: preparedMedia[0]?.path,
       checkin_image_urls: preparedMedia.map((m) => m.path),
     };
@@ -404,44 +398,51 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
     try {
       await onSubmit(payload);
     } catch (err: unknown) {
-      console.warn('[DateForm Submit Error, attempting offline draft]', err);
-      // Offline fallback: save draft to IndexedDB
-      try {
-        const coupleId = defaultValues?.couple_id || 'unknown';
-        const clientId = crypto.randomUUID();
-        await saveDraft({
-          id: clientId,
-          couple_id: coupleId,
-          form: payload,
-          places: validPlaces,
-          mediaFiles: mediaList
-            .filter((m) => !m.uploadedPath)
-            .map((m) => ({
-              id: m.id,
-              blob: m.file,
-              name: m.file.name,
-              type: m.file.type,
-              kind: m.kind,
-              width: m.width,
-              height: m.height,
-              duration_s: m.duration_s,
-            })),
-          uploadedMedia: preparedMedia,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          status: 'pending',
-          lastError: err instanceof Error ? err.message : 'Lỗi kết nối',
-        });
+      console.warn('[DateForm Submit Error]', err);
+      const isNetworkError =
+        typeof navigator !== 'undefined' &&
+        (!navigator.onLine || (err instanceof Error && /network|fetch|kết nối|mạng|failed/i.test(err.message)));
 
-        toast({
-          type: 'info',
-          title: 'Mạng hơi yếu — Mình giữ bản nháp cho bạn, thử lại sau nhé.',
-        });
-        router.push('/dates');
-      } catch (draftErr) {
-        setErrorMessage(err instanceof Error ? err.message : 'Không thể lưu buổi hẹn');
-        setIsSubmitting(false);
+      if (isNetworkError) {
+        try {
+          const clientId = crypto.randomUUID();
+          await saveDraft({
+            id: clientId,
+            couple_id: activeCoupleId,
+            form: payload,
+            places: validPlaces,
+            mediaFiles: mediaList
+              .filter((m) => !m.uploadedPath)
+              .map((m) => ({
+                id: m.id,
+                blob: m.file,
+                name: m.file.name,
+                type: m.file.type,
+                kind: m.kind,
+                width: m.width,
+                height: m.height,
+                duration_s: m.duration_s,
+              })),
+            uploadedMedia: preparedMedia,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            status: 'pending',
+            lastError: err instanceof Error ? err.message : 'Lỗi kết nối',
+          });
+
+          toast({
+            type: 'info',
+            title: 'Mạng hơi yếu — Mình giữ bản nháp cho bạn, thử lại sau nhé.',
+          });
+          router.push('/dates');
+          return;
+        } catch {
+          // If draft saving also fails, fall through to inline error display
+        }
       }
+
+      setErrorMessage(err instanceof Error ? err.message : 'Không thể lưu buổi hẹn');
+      setIsSubmitting(false);
     }
   };
 
@@ -502,7 +503,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
               <button
                 type="button"
                 onClick={() => handleRemoveMedia(m.id)}
-                className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors cursor-pointer"
                 aria-label="Xoá media"
               >
                 <X size={13} />
@@ -514,7 +515,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="aspect-square flex flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-text-muted hover:text-primary p-2"
+              className="aspect-square flex flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-text-muted hover:text-primary p-2 cursor-pointer"
             >
               <Plus size={22} />
               <span className="text-[11px] font-medium text-center">Thêm ảnh/video</span>
@@ -538,7 +539,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
                 key={m.id}
                 type="button"
                 onClick={() => setMood(isSelected ? undefined : m.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-primary text-primary-fg shadow-sm scale-105'
                     : 'bg-surface hover:bg-surface-hover text-text border border-border'
@@ -562,22 +563,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
         />
       </div>
 
-      {/* 3. ✍️ Đặt tên (tuỳ chọn) */}
-      <div>
-        <label className="block text-xs font-semibold text-text-muted mb-1.5">
-          Đặt tên (tuỳ chọn)
-        </label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Ví dụ: Đi ăn kem Tràng Tiền, dạo phố cổ..."
-          maxLength={100}
-          className="w-full px-3.5 py-2.5 rounded-[var(--radius-md)] bg-surface border border-border text-text placeholder:text-text-muted text-sm focus:outline-none focus:border-primary transition-colors"
-        />
-      </div>
-
-      {/* 4. 📍 Địa điểm */}
+      {/* 3. 📍 Địa điểm (nhập địa chỉ như Google Maps) */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-semibold text-text flex items-center gap-1.5">
@@ -588,7 +574,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
             <button
               type="button"
               onClick={handleAddPlace}
-              className="text-xs text-primary font-medium hover:underline flex items-center gap-1"
+              className="text-xs text-primary font-medium hover:underline flex items-center gap-1 cursor-pointer"
             >
               <Plus size={12} /> Thêm điểm dừng
             </button>
@@ -602,14 +588,14 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
                 <PlacePicker
                   value={place}
                   onChange={(val) => handlePlaceChange(idx, val)}
-                  placeholder={idx === 0 ? 'Tên quán, phố, điểm hẹn...' : `Điểm dừng ${idx + 1}...`}
+                  placeholder={idx === 0 ? 'Nhập địa chỉ hoặc tên quán (như Google Maps)...' : `Điểm dừng ${idx + 1}...`}
                 />
               </div>
               {places.length > 1 && (
                 <button
                   type="button"
                   onClick={() => handleRemovePlace(idx)}
-                  className="p-2 text-text-muted hover:text-red-500 transition-colors"
+                  className="p-2 text-text-muted hover:text-red-500 transition-colors cursor-pointer"
                   aria-label="Xoá điểm dừng"
                 >
                   <Trash2 size={16} />
@@ -620,7 +606,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
         </div>
       </div>
 
-      {/* 5. 🗓️ Khi nào (Ngày & Đến ngày) */}
+      {/* 4. 🗓️ Khi nào (Ngày & Đến ngày) */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-semibold text-text flex items-center gap-1.5">
@@ -630,7 +616,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
           <button
             type="button"
             onClick={() => setShowEndDate(!showEndDate)}
-            className="text-xs text-primary font-medium hover:underline"
+            className="text-xs text-primary font-medium hover:underline cursor-pointer"
           >
             {showEndDate ? 'Chuyến đi 1 ngày' : '+ Chuyến đi nhiều ngày'}
           </button>
@@ -642,7 +628,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
               type="date"
               value={dateTime}
               onChange={(e) => setDateTime(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-[var(--radius-md)] bg-surface border border-border text-text text-sm focus:outline-none focus:border-primary transition-colors"
+              className="w-full h-[42px] px-3.5 py-2 rounded-[var(--radius-md)] bg-surface border border-border text-text text-sm focus:outline-none focus:border-primary transition-colors appearance-none"
             />
           </div>
 
@@ -654,14 +640,14 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
                 min={dateTime}
                 onChange={(e) => setEndDate(e.target.value)}
                 placeholder="Đến ngày"
-                className="w-full px-3.5 py-2 rounded-[var(--radius-md)] bg-surface border border-border text-text text-sm focus:outline-none focus:border-primary transition-colors"
+                className="w-full h-[42px] px-3.5 py-2 rounded-[var(--radius-md)] bg-surface border border-border text-text text-sm focus:outline-none focus:border-primary transition-colors appearance-none"
               />
             </div>
           )}
         </div>
       </div>
 
-      {/* 6. 🏷️ Gắn thẻ */}
+      {/* 5. 🏷️ Gắn thẻ */}
       <div>
         <label className="block text-xs font-semibold text-text-muted mb-1.5">
           Gắn thẻ (tối đa 5 thẻ)
@@ -676,7 +662,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
               <button
                 type="button"
                 onClick={() => handleRemoveTag(tag)}
-                className="hover:text-red-500"
+                className="hover:text-red-500 cursor-pointer"
                 aria-label={`Xoá thẻ ${tag}`}
               >
                 <X size={12} />
@@ -692,7 +678,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
                 key={sug}
                 type="button"
                 onClick={() => handleAddTag(sug)}
-                className="px-2 py-1 rounded-full bg-surface hover:bg-surface-hover border border-border text-text-muted text-xs hover:text-text transition-colors"
+                className="px-2 py-1 rounded-full bg-surface hover:bg-surface-hover border border-border text-text-muted text-xs hover:text-text transition-colors cursor-pointer"
               >
                 + {sug}
               </button>
@@ -701,22 +687,26 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
         )}
       </div>
 
-      {/* 7. 💸 Chi tiêu & Ai trả? */}
+      {/* 6. 💸 Chi tiêu & Ai trả? */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="text-xs font-semibold text-text-muted flex items-center gap-1.5 mb-1.5">
             <Coins size={14} className="text-primary" />
-            <span>Chi tiêu (đ)</span>
+            <span>Chi tiêu (₫)</span>
           </label>
-          <input
-            type="number"
-            min="0"
-            step="1000"
-            value={spendVnd}
-            onChange={(e) => setSpendVnd(e.target.value)}
-            placeholder="0 đ (không bắt buộc)"
-            className="w-full px-3.5 py-2 rounded-[var(--radius-md)] bg-surface border border-border text-text placeholder:text-text-muted text-sm focus:outline-none focus:border-primary transition-colors"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={formatVndDisplay(spendVnd)}
+              onChange={handleSpendChange}
+              placeholder="0 ₫ (không bắt buộc)"
+              className="w-full pl-3.5 pr-8 py-2 rounded-[var(--radius-md)] bg-surface border border-border text-text placeholder:text-text-muted text-sm focus:outline-none focus:border-primary transition-colors"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-muted pointer-events-none">
+              ₫
+            </span>
+          </div>
         </div>
 
         <div>
@@ -725,7 +715,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
             <button
               type="button"
               onClick={() => setPayerType('me')}
-              className={`py-1.5 rounded-[var(--radius-sm)] font-medium transition-colors ${
+              className={`py-1.5 rounded-[var(--radius-sm)] font-medium transition-colors cursor-pointer ${
                 payerType === 'me' ? 'bg-primary text-primary-fg shadow-sm' : 'text-text-muted hover:text-text'
               }`}
             >
@@ -734,7 +724,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
             <button
               type="button"
               onClick={() => setPayerType('partner')}
-              className={`py-1.5 rounded-[var(--radius-sm)] font-medium transition-colors ${
+              className={`py-1.5 rounded-[var(--radius-sm)] font-medium transition-colors cursor-pointer ${
                 payerType === 'partner' ? 'bg-primary text-primary-fg shadow-sm' : 'text-text-muted hover:text-text'
               }`}
             >
@@ -743,7 +733,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
             <button
               type="button"
               onClick={() => setPayerType('split')}
-              className={`py-1.5 rounded-[var(--radius-sm)] font-medium transition-colors ${
+              className={`py-1.5 rounded-[var(--radius-sm)] font-medium transition-colors cursor-pointer ${
                 payerType === 'split' ? 'bg-primary text-primary-fg shadow-sm' : 'text-text-muted hover:text-text'
               }`}
             >
@@ -753,100 +743,22 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
         </div>
       </div>
 
-      {/* 8. 🎵 Bài hát */}
+      {/* 7. 📝 Ghi chú thêm (giữ lại 1 field điểm hay ở dữ liệu cũ) */}
       <div>
-        <label className="text-xs font-semibold text-text-muted flex items-center gap-1.5 mb-1.5">
-          <Music size={14} className="text-primary" />
-          <span>Bài hát</span>
+        <label className="block text-xs font-semibold text-text mb-1.5">
+          📝 Ghi chú thêm
         </label>
-        <input
-          type="text"
-          value={song}
-          onChange={(e) => setSong(e.target.value)}
-          placeholder="Bài hát nghe cùng nhau..."
-          maxLength={120}
-          className="w-full px-3.5 py-2 rounded-[var(--radius-md)] bg-surface border border-border text-text placeholder:text-text-muted text-sm focus:outline-none focus:border-primary transition-colors"
+        <textarea
+          value={pros}
+          onChange={(e) => setPros(e.target.value)}
+          placeholder="Kỷ niệm, điểm ấn tượng hoặc lưu ý về buổi hẹn..."
+          rows={3}
+          maxLength={500}
+          className="w-full px-3.5 py-2.5 rounded-[var(--radius-md)] bg-surface border border-border text-text placeholder:text-text-muted text-sm focus:outline-none focus:border-primary transition-colors resize-none"
         />
       </div>
 
-      {/* 9. Collapsible "Thêm chi tiết" */}
-      <div className="pt-2 border-t border-border/60">
-        <button
-          type="button"
-          onClick={() => setShowDetails(!showDetails)}
-          className="flex items-center justify-between w-full py-2 text-sm font-semibold text-text hover:text-primary transition-colors"
-        >
-          <span>Thêm chi tiết (Đánh giá, Điểm hay...)</span>
-          {showDetails ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-        </button>
-
-        {showDetails && (
-          <div className="space-y-4 pt-3">
-            {/* Rating */}
-            <div>
-              <label className="block text-xs font-medium text-text-muted mb-1.5">
-                Đánh giá buổi hẹn
-              </label>
-              <div className="flex items-center gap-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setRating(rating === star ? 0 : star)}
-                    className="text-2xl transition-transform hover:scale-110"
-                  >
-                    {star <= rating ? '❤️' : '🤍'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Pros */}
-            <div>
-              <label className="block text-xs font-medium text-text-muted mb-1.5">
-                ✅ Điểm hay
-              </label>
-              <textarea
-                value={pros}
-                onChange={(e) => setPros(e.target.value)}
-                placeholder="Điều gì làm bạn ấn tượng nhất..."
-                rows={2}
-                className="w-full px-3.5 py-2 rounded-[var(--radius-md)] bg-surface border border-border text-text text-sm focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-
-            {/* Cons */}
-            <div>
-              <label className="block text-xs font-medium text-text-muted mb-1.5">
-                🔧 Cần cải thiện
-              </label>
-              <textarea
-                value={cons}
-                onChange={(e) => setCons(e.target.value)}
-                placeholder="Điều gì có thể tốt hơn lần sau..."
-                rows={2}
-                className="w-full px-3.5 py-2 rounded-[var(--radius-md)] bg-surface border border-border text-text text-sm focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-
-            {/* Wish Next Time */}
-            <div>
-              <label className="block text-xs font-medium text-text-muted mb-1.5">
-                💭 Muốn thử lần sau
-              </label>
-              <textarea
-                value={wishNextTime}
-                onChange={(e) => setWishNextTime(e.target.value)}
-                placeholder="Ý tưởng cho buổi hẹn tiếp theo..."
-                rows={2}
-                className="w-full px-3.5 py-2 rounded-[var(--radius-md)] bg-surface border border-border text-text text-sm focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 10. Privacy notice */}
+      {/* Privacy notice */}
       <div className="flex items-center gap-2 py-2 text-xs text-text-muted">
         <Lock size={13} className="text-primary/70" />
         <span>🔒 Chỉ hai bạn thấy nội dung này.</span>
@@ -866,7 +778,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
             type="button"
             onClick={onCancel}
             disabled={isSubmitting || isLoading}
-            className="px-4 py-2.5 rounded-[var(--radius-md)] border border-border text-text text-sm font-medium hover:bg-surface-hover transition-colors"
+            className="px-4 py-2.5 rounded-[var(--radius-md)] border border-border text-text text-sm font-medium hover:bg-surface-hover transition-colors cursor-pointer"
           >
             Hủy
           </button>
@@ -875,7 +787,7 @@ export function DateForm({ defaultValues, onSubmit, onCancel, isLoading }: DateF
         <button
           type="submit"
           disabled={isSubmitting || isLoading}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-[var(--radius-md)] bg-primary text-primary-fg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity shadow-sm"
+          className="flex items-center gap-2 px-6 py-2.5 rounded-[var(--radius-md)] bg-primary text-primary-fg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity shadow-sm cursor-pointer"
         >
           {isSubmitting || isLoading ? (
             <>

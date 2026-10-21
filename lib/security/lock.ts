@@ -12,10 +12,11 @@ const STORAGE_KEYS = {
   LOCKED_UNTIL: 'dj_lock_locked_until',
   HIDDEN_AT: 'dj_lock_hidden_at',
   STATUS: 'dj_lock_status', // 'locked' | 'unlocked'
+  TIMEOUT: 'dj_lock_timeout', // 'immediate' | '1m' | '5m'
   MULTITASK_BLUR: 'dj_privacy_blur_enabled',
 };
 
-const AUTO_LOCK_TIMEOUT_MS = 60 * 1000; // 1 minute in background
+const SESSION_UNLOCKED_KEY = 'dj_session_unlocked';
 
 export async function hashPin(pin: string, salt: string): Promise<string> {
   const enc = new TextEncoder();
@@ -28,6 +29,11 @@ export async function hashPin(pin: string, salt: string): Promise<string> {
 function getStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
   return window.localStorage;
+}
+
+function getSessionStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  return window.sessionStorage;
 }
 
 export function isLockEnabled(): boolean {
@@ -53,6 +59,7 @@ export async function setupPin(pin: string): Promise<void> {
   storage.setItem(STORAGE_KEYS.HASH, hash);
   storage.setItem(STORAGE_KEYS.ENABLED, 'true');
   storage.setItem(STORAGE_KEYS.STATUS, 'unlocked');
+  getSessionStorage()?.setItem(SESSION_UNLOCKED_KEY, 'true');
   resetFailedAttempts();
 }
 
@@ -64,28 +71,45 @@ export function disableLock(): void {
   storage.removeItem(STORAGE_KEYS.SALT);
   storage.removeItem(STORAGE_KEYS.BIOMETRICS);
   storage.removeItem(STORAGE_KEYS.STATUS);
+  storage.removeItem(STORAGE_KEYS.TIMEOUT);
+  getSessionStorage()?.removeItem(SESSION_UNLOCKED_KEY);
   resetFailedAttempts();
 }
 
 export function isCurrentlyLocked(): boolean {
-  const storage = getStorage();
-  if (!storage) return false;
+  if (typeof window === 'undefined') return false;
   if (!isLockEnabled()) return false;
-  const status = storage.getItem(STORAGE_KEYS.STATUS);
-  return status !== 'unlocked';
+  const localStatus = getStorage()?.getItem(STORAGE_KEYS.STATUS);
+  if (localStatus === 'locked') return true;
+  const sessionUnlocked = getSessionStorage()?.getItem(SESSION_UNLOCKED_KEY) === 'true';
+  return !sessionUnlocked;
 }
 
 export function lockApp(): void {
   const storage = getStorage();
   if (!storage || !isLockEnabled()) return;
   storage.setItem(STORAGE_KEYS.STATUS, 'locked');
+  getSessionStorage()?.removeItem(SESSION_UNLOCKED_KEY);
 }
 
 export function unlockApp(): void {
   const storage = getStorage();
   if (!storage) return;
   storage.setItem(STORAGE_KEYS.STATUS, 'unlocked');
+  getSessionStorage()?.setItem(SESSION_UNLOCKED_KEY, 'true');
   resetFailedAttempts();
+}
+
+export function getLockTimeout(): 'immediate' | '1m' | '5m' {
+  const storage = getStorage();
+  const val = storage?.getItem(STORAGE_KEYS.TIMEOUT);
+  if (val === 'immediate' || val === '5m') return val;
+  return '1m';
+}
+
+export function setLockTimeout(timeout: 'immediate' | '1m' | '5m'): void {
+  const storage = getStorage();
+  storage?.setItem(STORAGE_KEYS.TIMEOUT, timeout);
 }
 
 export function getFailedAttempts(): number {
@@ -122,13 +146,11 @@ export function recordFailedAttempt(): {
   storage.setItem(STORAGE_KEYS.FAILED, String(current));
 
   if (current >= 10) {
-    // 10 failed attempts -> force logout
     resetFailedAttempts();
     return { attempts: current, lockedUntil: null, forceLogout: true };
   }
 
   if (current >= 5) {
-    // 5-9 failed attempts -> 30s timeout (increases with each subsequent fail)
     const timeoutSeconds = 30 * (current - 4);
     const lockedUntil = Date.now() + timeoutSeconds * 1000;
     storage.setItem(STORAGE_KEYS.LOCKED_UNTIL, String(lockedUntil));
@@ -188,8 +210,15 @@ export function checkAutoLock(): boolean {
 
   const hiddenAt = parseInt(hiddenAtStr, 10);
   const elapsed = Date.now() - hiddenAt;
+  const timeoutSetting = getLockTimeout();
+  const timeoutMs =
+    timeoutSetting === 'immediate'
+      ? 1500
+      : timeoutSetting === '5m'
+        ? 5 * 60 * 1000
+        : 60 * 1000;
 
-  if (elapsed >= AUTO_LOCK_TIMEOUT_MS) {
+  if (elapsed >= timeoutMs) {
     lockApp();
     storage.removeItem(STORAGE_KEYS.HIDDEN_AT);
     return true;

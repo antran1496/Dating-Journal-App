@@ -41,7 +41,7 @@ export default function DatesPage() {
   };
 
   const { data } = useInfiniteDates(couple?.id, activeFilters);
-  const totalCount = data?.pages ? data.pages.flat().length : 0;
+  const totalCount = data?.pages?.[0]?.total ?? (data?.pages ? data.pages.flatMap((p) => (Array.isArray(p) ? p : p.data)).length : 0);
 
   if (isLoadingCouple) {
     return <div className="p-8 text-center text-text-muted">Đang tải dữ liệu...</div>;

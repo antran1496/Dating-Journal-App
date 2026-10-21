@@ -28,6 +28,10 @@ export function OnThisDayWidget() {
   const memoryDate = memory?.date_time ? new Date(memory.date_time) : null;
   const yearsAgo = memoryDate ? differenceInYears(new Date(), memoryDate) : 1;
 
+  if (!memory) {
+    return null;
+  }
+
   return (
     <div className="bg-surface rounded-[var(--radius-xl)] border border-border p-5 shadow-xs flex flex-col gap-3">
       <div className="flex items-center justify-between">
@@ -43,55 +47,41 @@ export function OnThisDayWidget() {
         </Link>
       </div>
 
-      {memory ? (
-        <div
-          onClick={() => router.push(`/dates/${memory.id}`)}
-          className="group flex items-center gap-3.5 p-3 rounded-[var(--radius-lg)] bg-surface-hover/60 border border-border/80 hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer"
-        >
-          {(() => {
-            const rawMedia = (memory.media && memory.media.length > 0 ? memory.media[0] : null)
-              ?? (memory as unknown as { date_media?: { id: string; path?: string }[] }).date_media?.[0];
-            const thumbnail = rawMedia?.path ?? memory.checkin_image_urls?.[0] ?? memory.checkin_image_url;
-            return (
-              <div className="w-16 h-16 rounded-[var(--radius-md)] overflow-hidden shrink-0 bg-surface border border-border">
-                <SecureImage
-                  mediaId={rawMedia?.id}
-                  src={thumbnail}
-                  alt={memory.title || 'Kỷ niệm'}
-                  size="thumb"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                />
-              </div>
-            );
-          })()}
+      <div
+        onClick={() => router.push(`/dates/${memory.id}`)}
+        className="group flex items-center gap-3.5 p-3 rounded-[var(--radius-lg)] bg-surface-hover/60 border border-border/80 hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer"
+      >
+        {(() => {
+          const rawMedia = (memory.media && memory.media.length > 0 ? memory.media[0] : null)
+            ?? (memory as unknown as { date_media?: { id: string; path?: string }[] }).date_media?.[0];
+          const thumbnail = rawMedia?.path ?? memory.checkin_image_urls?.[0] ?? memory.checkin_image_url;
+          return (
+            <div className="w-16 h-16 rounded-[var(--radius-md)] overflow-hidden shrink-0 bg-surface border border-border">
+              <SecureImage
+                mediaId={rawMedia?.id}
+                src={thumbnail}
+                alt={memory.location_name || memory.title || 'Kỷ niệm'}
+                size="thumb"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+              />
+            </div>
+          );
+        })()}
 
-          <div className="flex-1 min-w-0">
-            <span className="text-[11px] font-semibold text-primary px-2 py-0.5 rounded-full bg-primary/10 inline-block mb-1">
-              {yearsAgo > 0 ? `${yearsAgo} năm trước` : 'Năm ngoái'}
-            </span>
-            <h4 className="font-semibold text-sm text-text truncate group-hover:text-primary transition-colors">
-              {memory.title || 'Buổi hẹn đặc biệt'}
-            </h4>
-            {memoryDate && (
-              <p className="text-xs text-text-muted mt-0.5">
-                {format(memoryDate, 'dd/MM/yyyy')}
-              </p>
-            )}
-          </div>
+        <div className="flex-1 min-w-0">
+          <span className="text-[11px] font-semibold text-primary px-2 py-0.5 rounded-full bg-primary/10 inline-block mb-1">
+            {yearsAgo > 0 ? `${yearsAgo} năm trước` : 'Năm ngoái'}
+          </span>
+          <h4 className="font-semibold text-sm text-text truncate group-hover:text-primary transition-colors">
+            {memory.location_name || memory.title || 'Buổi hẹn đặc biệt'}
+          </h4>
+          {memoryDate && (
+            <p className="text-xs text-text-muted mt-0.5">
+              {format(memoryDate, 'dd/MM/yyyy')}
+            </p>
+          )}
         </div>
-      ) : (
-        <div className="py-4 px-3 rounded-[var(--radius-lg)] bg-surface-hover/30 border border-dashed border-border text-center">
-          <p className="text-xs text-text-muted">
-            Hôm nay chưa có kỷ niệm nào từ những năm trước.
-          </p>
-          <Link
-            href="/dates/new"
-            className="text-xs text-primary font-medium hover:underline inline-block mt-1.5"
-          >
-            + Ghi lại kỷ niệm cho ngày hôm nay
-          </Link>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

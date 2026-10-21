@@ -1,6 +1,5 @@
 import { DeleteDateButton } from "@/components/features/delete-date-button";
 import { ImageGallery } from "@/components/features/image-gallery";
-import { MemoryReactions } from "@/components/features/memory-reactions";
 import { BackButton } from "@/components/ui/back-button";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -251,11 +250,11 @@ export default async function DateDetailPage(props: DateDetailPageProps) {
       {/* Review details: Pros, Cons, Wish */}
       <div className="space-y-4">
         {entry.pros && (
-          <div className="p-4 rounded-[var(--radius-lg)] bg-[var(--color-success)]/5 border border-[var(--color-success)]/20">
+          <div className="p-4 rounded-[var(--radius-lg)] bg-primary/5 border border-primary/20">
             <h2 className="font-semibold text-text text-sm mb-1.5 flex items-center gap-2">
-              <span className="text-base">✅</span> Điểm hay
+              <span className="text-base">📝</span> Ghi chú thêm
             </h2>
-            <p className="text-text text-sm whitespace-pre-wrap">{entry.pros}</p>
+            <p className="text-text text-sm whitespace-pre-wrap leading-relaxed">{entry.pros}</p>
           </div>
         )}
 
@@ -279,13 +278,6 @@ export default async function DateDetailPage(props: DateDetailPageProps) {
           </div>
         )}
       </div>
-
-      {/* Reactions & Comments (Phase P4) */}
-      <MemoryReactions
-        dateId={entry.id}
-        coupleId={entry.couple_id}
-        createdBy={entry.created_by}
-      />
     </div>
   );
 }

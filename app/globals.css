@@ -243,3 +243,23 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Date input styling and mobile alignment fix */
+input[type="date"] {
+  min-height: 42px;
+  line-height: 1.5;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  line-height: 1.5;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+

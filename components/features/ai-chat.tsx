@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
+import { Send, Sparkles, AlertCircle, RefreshCw, Menu } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import ReactMarkdown from 'react-markdown';
 import type { AiChatMessage, Profile } from '@/types';
@@ -11,9 +11,10 @@ interface AiChatProps {
   sessionId: string | null;
   profile: Profile | null;
   onSendMessage: (message: string, currentSessionId: string | null) => Promise<string>;
+  onOpenSidebar?: () => void;
 }
 
-export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: AiChatProps) {
+export function AiChat({ initialMessages, sessionId, profile, onSendMessage, onOpenSidebar }: AiChatProps) {
   const [messages, setMessages] = useState<AiChatMessage[]>(initialMessages);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -81,16 +82,29 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0 border border-border rounded-[var(--radius-lg)] bg-surface overflow-hidden shadow-sm">
+    <div className="flex flex-col h-full min-h-0 border-0 md:border md:border-border rounded-none md:rounded-[var(--radius-lg)] bg-surface overflow-hidden shadow-none md:shadow-sm">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border bg-surface flex items-center gap-3 shrink-0">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glow">
-          <Sparkles className="w-5 h-5 text-white" />
+      <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 border-b border-border bg-surface flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glow shrink-0">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="font-heading font-bold text-base sm:text-lg text-text">Cupid 💘</h2>
+            <p className="text-xs text-text-muted hidden sm:block">Gợi ý buổi hẹn theo ngân sách và wishlist của hai bạn.</p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-heading font-bold text-lg text-text">Cupid 💘</h2>
-          <p className="text-xs text-text-muted">Gợi ý buổi hẹn theo ngân sách và wishlist của hai bạn.</p>
-        </div>
+
+        {onOpenSidebar && (
+          <button
+            type="button"
+            onClick={onOpenSidebar}
+            className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-hover border border-border text-xs text-text font-medium transition-colors cursor-pointer"
+          >
+            <Menu className="w-3.5 h-3.5 text-primary" />
+            <span>Lịch sử</span>
+          </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -195,7 +209,7 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
       </div>
 
       {/* Input */}
-      <div className="p-3 bg-surface border-t border-border shrink-0">
+      <div className="p-2.5 sm:p-3 bg-surface border-t border-border shrink-0">
         <form id="chat-form" onSubmit={handleSubmit} className="flex items-end gap-2 relative">
           <textarea
             value={input}
@@ -207,18 +221,18 @@ export function AiChat({ initialMessages, sessionId, profile, onSendMessage }: A
               }
             }}
             placeholder="Nhắn cho Cupid..."
-            className="flex-1 max-h-32 min-h-[44px] py-2.5 pl-4 pr-12 bg-surface-hover border border-border rounded-3xl resize-none focus:outline-none focus:border-primary/50 text-sm text-text"
+            className="flex-1 max-h-28 sm:max-h-32 min-h-[42px] sm:min-h-[44px] py-2 sm:py-2.5 pl-3.5 sm:pl-4 pr-11 bg-surface-hover border border-border rounded-3xl resize-none focus:outline-none focus:border-primary/50 text-sm text-text"
             rows={1}
           />
           <button
             type="submit"
             disabled={!input.trim() || isTyping}
-            className="absolute right-2 bottom-1.5 p-2 rounded-full bg-primary text-white hover:bg-primary-hover disabled:opacity-50 disabled:hover:bg-primary transition-colors flex shrink-0 cursor-pointer"
+            className="absolute right-1.5 bottom-1 sm:right-2 sm:bottom-1.5 p-2 rounded-full bg-primary text-white hover:bg-primary-hover disabled:opacity-50 disabled:hover:bg-primary transition-colors flex shrink-0 cursor-pointer"
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
-        <p className="text-[11px] text-text-muted text-center mt-2 px-2">
+        <p className="text-[10px] sm:text-[11px] text-text-muted text-center mt-1.5 px-2 hidden sm:block">
           Cupid gợi ý để tham khảo và không đưa ra lời khuyên y tế hay pháp lý. Cuộc trò chuyện chỉ hai bạn xem được.
         </p>
       </div>

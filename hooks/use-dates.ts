@@ -24,18 +24,23 @@ export function useCalendarDates(coupleId: string | undefined) {
   });
 }
 
+export interface DatesPageResult {
+  data: DateEntry[];
+  total: number;
+}
+
 export function useInfiniteDates(
   coupleId: string | undefined,
   filters?: DateFilters,
   initialData?: {
-    pages: DateEntry[][];
+    pages: DatesPageResult[];
     pageParams: number[];
   }
 ) {
   return useInfiniteQuery({
     queryKey: queryKeys.dates.list(coupleId ?? '', filters),
-    queryFn: async ({ pageParam = 0 }) => {
-      if (!coupleId) return [];
+    queryFn: async ({ pageParam = 0 }): Promise<DatesPageResult> => {
+      if (!coupleId) return { data: [], total: 0 };
       const page = (pageParam as number) + 1;
       const params = new URLSearchParams({
         couple_id: coupleId,
@@ -57,11 +62,15 @@ export function useInfiniteDates(
         throw new Error('Không thể tải danh sách buổi hẹn');
       }
       const json = await res.json();
-      return (json.data || []) as DateEntry[];
+      return {
+        data: (json.data || []) as DateEntry[],
+        total: typeof json.total === 'number' ? json.total : (json.data?.length ?? 0),
+      };
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-      if (!lastPage || lastPage.length < DATES_PAGE_SIZE) {
+      const items = Array.isArray(lastPage) ? lastPage : lastPage?.data;
+      if (!items || items.length < DATES_PAGE_SIZE) {
         return undefined;
       }
       return (lastPageParam as number) + 1;

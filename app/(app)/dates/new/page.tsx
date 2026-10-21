@@ -1,40 +1,25 @@
 'use client';
 
+import { Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { DateForm } from '@/components/features/date-form';
 import { BackButton } from '@/components/ui/back-button';
-import { createClient } from '@/lib/supabase/client';
-import type { CreateDatePayload } from '@/hooks/use-date-mutations';
-import { useSessionUser } from '@/components/providers/session-provider';
-import { useCreateDate } from '@/hooks/use-date-mutations';
-import { useQuery } from '@tanstack/react-query';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { useCouple } from '@/hooks/use-couple';
+import { useCreateDate, type CreateDatePayload } from '@/hooks/use-date-mutations';
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 
 function NewDateContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultDateParam = searchParams.get('date');
-  const supabase = createClient();
 
-  const { user } = useSessionUser();
-
-  const { data: coupleId } = useQuery({
-    queryKey: ['couple-id'],
-    queryFn: async () => {
-      if (!user) return null;
-      const { data } = await supabase
-        .from('couple_members')
-        .select('couple_id')
-        .eq('profile_id', user.id)
-        .maybeSingle();
-      return data?.couple_id ?? null;
-    },
-  });
-
-  const createMutation = useCreateDate(coupleId || '');
+  const { couple, isLoading: isLoadingCouple } = useCouple();
+  const createMutation = useCreateDate(couple?.id || '');
 
   const handleSubmit = async (values: CreateDatePayload) => {
-    if (!coupleId) return;
+    if (!couple?.id) {
+      throw new Error('Chưa tải xong dữ liệu cặp đôi, vui lòng thử lại.');
+    }
 
     try {
       await createMutation.mutateAsync(values);
@@ -45,6 +30,15 @@ function NewDateContent() {
       throw new Error(msg);
     }
   };
+
+  if (isLoadingCouple || !couple) {
+    return (
+      <div className="max-w-xl mx-auto space-y-4">
+        <LoadingSkeleton variant="text" width="60%" height="32px" />
+        <LoadingSkeleton variant="rect" height="400px" className="rounded-[var(--radius-lg)]" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-xl mx-auto">
@@ -58,8 +52,9 @@ function NewDateContent() {
 
       <div className="bg-surface rounded-[var(--radius-lg)] border border-border p-6">
         <DateForm
+          coupleId={couple.id}
           defaultValues={{
-            couple_id: coupleId || '',
+            couple_id: couple.id,
             ...(defaultDateParam ? { date_time: defaultDateParam } : {}),
           }}
           onSubmit={handleSubmit}

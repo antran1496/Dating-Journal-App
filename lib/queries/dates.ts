@@ -71,18 +71,6 @@ export async function getDateById(
     return null;
   }
 
-  // Fetch social interactions in parallel
-  const [{ data: reactions }, { data: comments }, { data: views }] = await Promise.all([
-    supabase.from('date_reactions').select('*, profile:profiles(*)').eq('date_id', id),
-    supabase
-      .from('date_comments')
-      .select('*, author:profiles(*)')
-      .eq('date_id', id)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: true }),
-    supabase.from('date_views').select('*, profile:profiles(*)').eq('date_id', id),
-  ]);
-
   const raw = data as Record<string, unknown>;
   const mediaList = raw.media && (raw.media as unknown[]).length ? raw.media : raw.date_media || [];
   const placesList = raw.places && (raw.places as unknown[]).length ? raw.places : raw.date_places || [];
@@ -91,9 +79,6 @@ export async function getDateById(
     ...data,
     media: mediaList,
     places: placesList,
-    reactions: reactions || [],
-    comments: comments || [],
-    views: views || [],
   } as DateEntry;
 }
 

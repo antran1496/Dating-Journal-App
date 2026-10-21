@@ -136,16 +136,8 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="animate-[fadeIn_0.3s_ease-out] flex flex-col md:flex-row gap-3 md:gap-6 chat-container-layout">
+    <div className="-m-4 md:m-0 flex flex-col md:flex-row md:gap-6 h-[calc(100dvh-5.5rem-env(safe-area-inset-bottom,0px))] md:h-[calc(100dvh-160px)]">
       
-      {/* Mobile Header Toggle */}
-      <div className="md:hidden flex items-center justify-between bg-surface border border-border px-3 py-2 rounded-[var(--radius-md)] shrink-0">
-        <span className="font-heading font-medium text-text text-sm">Đoạn chat</span>
-        <Button variant="secondary" onClick={() => setIsSidebarOpen(true)} className="h-7 px-2.5 text-xs">
-          <Menu className="w-3.5 h-3.5 mr-1" /> Lịch sử
-        </Button>
-      </div>
-
       {/* Sidebar for Sessions */}
       <div className={`
         fixed inset-0 z-50 bg-surface md:bg-transparent md:relative md:z-auto
@@ -154,7 +146,7 @@ export default function ChatPage() {
       `}>
         <div className="md:hidden flex justify-between items-center mb-4">
           <h2 className="font-heading font-bold text-lg text-text">Lịch sử chat</h2>
-          <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-text-muted hover:text-text rounded-full hover:bg-surface-hover">
+          <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-text-muted hover:text-text rounded-full hover:bg-surface-hover cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -177,7 +169,7 @@ export default function ChatPage() {
               <button
                 key={session.id}
                 onClick={() => selectSession(session.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-[var(--radius-md)] text-sm transition-colors flex items-center gap-2 ${
+                className={`w-full text-left px-3 py-2.5 rounded-[var(--radius-md)] text-sm transition-colors flex items-center gap-2 cursor-pointer ${
                   currentSessionId === session.id 
                     ? 'bg-primary text-primary-fg font-medium shadow-sm' 
                     : 'text-text hover:bg-surface-hover'
@@ -199,6 +191,7 @@ export default function ChatPage() {
           sessionId={currentSessionId}
           profile={profile}
           onSendMessage={handleSendMessage}
+          onOpenSidebar={() => setIsSidebarOpen(true)}
         />
       </div>
 

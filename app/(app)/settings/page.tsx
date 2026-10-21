@@ -1,41 +1,29 @@
+'use client';
+
 import React from 'react';
-import { createClient } from '@/lib/supabase/server';
-import { getCurrentUser } from '@/lib/auth/session';
-import { redirect } from 'next/navigation';
 import { SettingsIndex } from '@/components/features/settings-index';
-import type { Profile, CoupleWithMembers } from '@/types';
+import { useProfile } from '@/hooks/use-profile';
+import { useCouple } from '@/hooks/use-couple';
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 
-export const metadata = {
-  title: 'Cài đặt | Dating Journal',
-};
+export default function SettingsPage() {
+  const { profile, isLoading: isLoadingProfile } = useProfile();
+  const { couple, isLoading: isLoadingCouple } = useCouple();
 
-export default async function SettingsPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
-  
-  const supabase = await createClient(user);
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile) redirect('/login');
-
-  const { data: memberData } = await supabase
-    .from('couple_members')
-    .select(`
-      couple_id, nickname, role,
-      couple:couples(
-        id, invite_code, anniversary_date, relationship_status, created_by, created_at,
-        couple_members(couple_id, profile_id, nickname, role, profile:profiles(*))
-      )
-    `)
-    .eq('profile_id', user.id)
-    .maybeSingle();
-
-  const couple = memberData?.couple as unknown as CoupleWithMembers | null;
+  if (isLoadingProfile || !profile) {
+    return (
+      <div className="max-w-xl mx-auto space-y-6 pb-12">
+        <div className="space-y-1">
+          <LoadingSkeleton variant="text" width="160px" height="32px" />
+          <LoadingSkeleton variant="text" width="280px" height="18px" />
+        </div>
+        <div className="space-y-4">
+          <LoadingSkeleton variant="rect" height="120px" className="rounded-[var(--radius-xl)]" />
+          <LoadingSkeleton variant="rect" height="200px" className="rounded-[var(--radius-xl)]" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-xl mx-auto space-y-6 pb-12">
@@ -43,7 +31,7 @@ export default async function SettingsPage() {
         <h1 className="font-heading text-2xl font-bold text-text">Cài đặt ⚙️</h1>
         <p className="text-text-muted text-sm">Quản lý tài khoản, giao diện và bảo mật của bạn</p>
       </div>
-      <SettingsIndex profile={profile as Profile} couple={couple} />
+      <SettingsIndex profile={profile} couple={couple ?? null} />
     </div>
   );
 }

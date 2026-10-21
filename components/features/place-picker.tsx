@@ -13,7 +13,7 @@ interface PlacePickerProps {
 export function PlacePicker({
   value,
   onChange,
-  placeholder = 'Tìm địa điểm hoặc nhập tên quán...',
+  placeholder = 'Nhập địa chỉ hoặc tên quán (như Google Maps)...',
 }: PlacePickerProps) {
   const [query, setQuery] = useState(value?.name || '');
   const [suggestions, setSuggestions] = useState<
@@ -70,10 +70,14 @@ export function PlacePicker({
     lng: number | null;
     area_label: string | null;
   }) => {
-    setQuery(item.name);
+    const formattedName = item.area_label && !item.name.toLowerCase().includes(item.area_label.toLowerCase())
+      ? `${item.name} (${item.area_label})`
+      : item.name;
+
+    setQuery(formattedName);
     setIsOpen(false);
     onChange({
-      name: item.name,
+      name: formattedName,
       lat: item.lat ?? undefined,
       lng: item.lng ?? undefined,
       area_label: item.area_label ?? undefined,
@@ -141,8 +145,8 @@ export function PlacePicker({
                 <div className="flex-1 truncate">
                   <span className="font-semibold text-text block truncate">{item.name}</span>
                   {item.area_label && (
-                    <span className="text-[11px] text-text-muted truncate block">
-                      {item.area_label}
+                    <span className="text-[11px] text-text-muted truncate block mt-0.5">
+                      📍 {item.area_label}
                     </span>
                   )}
                 </div>

@@ -31,8 +31,8 @@ export function Avatar({ src, alt, name, size = 'md', status, className = '' }: 
     : '?';
 
   return (
-    <div className={`relative inline-flex shrink-0 rounded-full ${className}`}>
-      <div className={`relative flex items-center justify-center overflow-hidden rounded-full aspect-square bg-surface-hover border border-border/50 shrink-0 ${sizes[size]}`}>
+    <div className={`relative inline-flex shrink-0 rounded-full ${sizes[size]} ${className}`}>
+      <div className="relative flex items-center justify-center overflow-hidden rounded-full aspect-square bg-surface-hover border border-border/50 shrink-0 w-full h-full">
         {src && !imageError ? (
           <img
             src={src}

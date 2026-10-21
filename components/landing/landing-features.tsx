@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, Heart, Calendar, MessageSquareHeart, Sparkles, Gift } from 'lucide-react';
+import { Camera, Calendar, MessageSquareHeart, Sparkles, Gift } from 'lucide-react';
 
 const FEATURES = [
   {
@@ -7,12 +7,6 @@ const FEATURES = [
     title: 'Ghi nhanh trong 10 giây',
     description: 'Một ảnh, một dòng, một mood. Lưu xong trước khi ra khỏi quán.',
     accent: 'text-rose-500 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900',
-  },
-  {
-    icon: Heart,
-    title: 'Thả tim cho nhau',
-    description: 'Người kia reaction và bình luận để bạn biết họ đã xem.',
-    accent: 'text-pink-500 bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-900',
   },
   {
     icon: Calendar,
@@ -49,7 +43,7 @@ export function LandingFeatures() {
             Mọi thứ hai bạn cần, không thừa thứ nào
           </h2>
           <p className="mt-3.5 text-base sm:text-lg text-text-muted">
-            Ghi kỷ niệm, đếm ngày, reaction và wishlist, tất cả đều sẵn sàng.
+            Ghi kỷ niệm, đếm ngày, câu hỏi và wishlist, tất cả đều sẵn sàng.
           </p>
         </div>
 

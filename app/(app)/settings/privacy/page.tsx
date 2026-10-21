@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   Shield,
@@ -23,6 +23,9 @@ import {
   isPlatformAuthenticatorAvailable,
   isMultitaskBlurEnabled,
   setMultitaskBlurEnabled,
+  lockApp,
+  getLockTimeout,
+  setLockTimeout,
 } from '@/lib/security/lock';
 import { useToast } from '@/components/ui/toast';
 
@@ -32,6 +35,7 @@ export default function PrivacySettingsPage() {
   const [biometricsOn, setBiometricsOn] = useState(false);
   const [hasBioHardware, setHasBioHardware] = useState(false);
   const [multitaskBlurOn, setMultitaskBlurOn] = useState(false);
+  const [timeoutSetting, setTimeoutSetting] = useState<'immediate' | '1m' | '5m'>('1m');
 
   // PIN Setup Modal state
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
@@ -39,16 +43,26 @@ export default function PrivacySettingsPage() {
   const [firstPin, setFirstPin] = useState('');
   const [secondPin, setSecondPin] = useState('');
   const [pinError, setPinError] = useState<string | null>(null);
+  const pinInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setLockOn(isLockEnabled());
     setBiometricsOn(isBiometricsEnabled());
     setMultitaskBlurOn(isMultitaskBlurEnabled());
+    setTimeoutSetting(getLockTimeout());
 
     isPlatformAuthenticatorAvailable().then((avail) => {
       setHasBioHardware(avail);
     });
   }, []);
+
+  useEffect(() => {
+    if (isPinModalOpen) {
+      setTimeout(() => {
+        pinInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isPinModalOpen, pinStep]);
 
   const handleToggleLock = () => {
     if (lockOn) {
@@ -137,29 +151,69 @@ export default function PrivacySettingsPage() {
             <div>
               <h3 className="font-heading text-base font-bold text-text">Khoá ứng dụng</h3>
               <p className="text-xs text-text-muted mt-0.5">
-                Tự động khoá sau 1 phút ở chế độ nền. Yêu cầu mã PIN 4 số để mở.
+                Bảo vệ bằng mã PIN 4 số khi mở lại ứng dụng hoặc sau thời gian chờ.
               </p>
             </div>
           </div>
 
           <button
             type="button"
+            role="switch"
+            aria-checked={lockOn}
             onClick={handleToggleLock}
-            className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+            className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 shrink-0 cursor-pointer flex items-center ${
               lockOn ? 'bg-primary' : 'bg-surface-hover border border-border'
             }`}
           >
-            <div
-              className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs absolute top-0.5 ${
-                lockOn ? 'left-5.5' : 'left-0.5'
+            <span
+              className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 pointer-events-none ${
+                lockOn ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
           </button>
         </div>
 
         {lockOn && (
-          <div className="pt-3 border-t border-border space-y-3">
+          <div className="pt-3 border-t border-border space-y-3.5">
+            {/* Test Lock Button */}
             <div className="flex items-center justify-between text-xs">
+              <div>
+                <span className="text-text font-medium block">Khoá thử ngay</span>
+                <span className="text-[11px] text-text-muted">Khoá màn hình ngay lập tức để thử mở bằng mã PIN</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  lockApp();
+                  window.location.reload();
+                }}
+                className="px-3 py-1.5 rounded-lg bg-surface-hover hover:bg-primary/10 text-primary font-semibold border border-border hover:border-primary/30 transition-colors cursor-pointer shrink-0"
+              >
+                Khoá ngay
+              </button>
+            </div>
+
+            {/* Timeout selector */}
+            <div className="flex items-center justify-between text-xs pt-1">
+              <span className="text-text font-medium">Tự động khoá</span>
+              <select
+                value={timeoutSetting}
+                onChange={(e) => {
+                  const val = e.target.value as 'immediate' | '1m' | '5m';
+                  setTimeoutSetting(val);
+                  setLockTimeout(val);
+                  toast({ type: 'success', title: 'Đã lưu thời gian tự động khoá' });
+                }}
+                className="px-2.5 py-1 rounded-lg bg-surface border border-border text-text text-xs focus:outline-none focus:border-primary cursor-pointer"
+              >
+                <option value="immediate">Ngay khi rời app</option>
+                <option value="1m">Sau 1 phút</option>
+                <option value="5m">Sau 5 phút</option>
+              </select>
+            </div>
+
+            {/* Change PIN button */}
+            <div className="flex items-center justify-between text-xs pt-1">
               <span className="text-text font-medium">Đổi mã PIN</span>
               <button
                 type="button"
@@ -177,21 +231,23 @@ export default function PrivacySettingsPage() {
             </div>
 
             {hasBioHardware && (
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center justify-between text-xs pt-1">
                 <span className="text-text font-medium flex items-center gap-1.5">
-                  <Fingerprint size={15} className="text-primary" />
-                  <span>Mở khoá bằng sinh trắc học (Face ID / Vân tay)</span>
+                  <Fingerprint size={15} className="text-primary shrink-0" />
+                  <span>Mở khoá bằng sinh trắc học</span>
                 </span>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={biometricsOn}
                   onClick={handleToggleBiometrics}
-                  className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
+                  className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 shrink-0 cursor-pointer flex items-center ${
                     biometricsOn ? 'bg-primary' : 'bg-surface-hover border border-border'
                   }`}
                 >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-white transition-transform shadow-xs absolute top-0.5 ${
-                      biometricsOn ? 'left-5' : 'left-0.5'
+                  <span
+                    className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 pointer-events-none ${
+                      biometricsOn ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
                 </button>
@@ -218,14 +274,16 @@ export default function PrivacySettingsPage() {
 
           <button
             type="button"
+            role="switch"
+            aria-checked={multitaskBlurOn}
             onClick={handleToggleMultitaskBlur}
-            className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+            className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 shrink-0 cursor-pointer flex items-center ${
               multitaskBlurOn ? 'bg-primary' : 'bg-surface-hover border border-border'
             }`}
           >
-            <div
-              className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs absolute top-0.5 ${
-                multitaskBlurOn ? 'left-5.5' : 'left-0.5'
+            <span
+              className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 pointer-events-none ${
+                multitaskBlurOn ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
           </button>
@@ -303,63 +361,119 @@ export default function PrivacySettingsPage() {
 
       {/* PIN Setup Modal */}
       {isPinModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-surface border border-border rounded-[var(--radius-2xl)] p-6 max-w-sm w-full space-y-5 shadow-2xl animate-scaleUp">
             <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
+                <Lock size={22} />
+              </div>
               <h3 className="font-heading text-lg font-bold text-text">
                 {pinStep === 1 ? 'Đặt mã PIN mới' : 'Xác nhận lại mã PIN'}
               </h3>
               <p className="text-xs text-text-muted mt-1">
                 {pinStep === 1
-                  ? 'Nhập 4 chữ số để tạo mã khoá ứng dụng'
+                  ? 'Nhập 4 chữ số bảo vệ ứng dụng'
                   : 'Nhập lại 4 chữ số vừa chọn để xác nhận'}
               </p>
             </div>
 
             {pinError && (
-              <p className="text-xs text-red-500 text-center font-medium">{pinError}</p>
+              <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-500 text-center font-medium">
+                {pinError}
+              </div>
             )}
 
-            <div className="flex justify-center gap-3">
+            {/* 4 PIN Dots visual display */}
+            <div className="flex justify-center gap-3 py-1">
+              {[0, 1, 2, 3].map((idx) => {
+                const currentDigits = pinStep === 1 ? firstPin : secondPin;
+                const isFilled = currentDigits.length > idx;
+                return (
+                  <div
+                    key={idx}
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all border ${
+                      isFilled
+                        ? 'border-primary bg-primary/10 text-primary shadow-xs'
+                        : 'border-border bg-surface text-transparent'
+                    }`}
+                  >
+                    {isFilled ? '●' : ''}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Number-Only Input with numeric keypad on mobile */}
+            <div className="flex justify-center">
               <input
-                type="password"
+                ref={pinInputRef}
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 maxLength={4}
                 value={pinStep === 1 ? firstPin : secondPin}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, '').slice(0, 4);
                   if (pinStep === 1) {
                     setFirstPin(val);
+                    setPinError(null);
                     if (val.length === 4) {
-                      setPinStep(2);
-                      setPinError(null);
+                      setTimeout(() => {
+                        setPinStep(2);
+                        setPinError(null);
+                      }, 200);
                     }
                   } else {
                     setSecondPin(val);
+                    setPinError(null);
                   }
                 }}
                 autoFocus
-                placeholder="••••"
-                className="w-36 text-center text-2xl tracking-widest py-2 rounded-xl border border-border bg-background text-text focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full text-center text-sm py-2.5 rounded-xl border border-border bg-surface-hover text-text tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                placeholder="Nhập 4 chữ số..."
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => setIsPinModalOpen(false)}
-                className="flex-1 py-2 text-xs font-semibold rounded-xl bg-surface-hover text-text-muted hover:text-text cursor-pointer"
+                onClick={() => {
+                  if (pinStep === 2) {
+                    setPinStep(1);
+                    setSecondPin('');
+                    setPinError(null);
+                  } else {
+                    setIsPinModalOpen(false);
+                  }
+                }}
+                className="flex-1 py-2.5 text-xs font-semibold rounded-xl bg-surface-hover text-text-muted hover:text-text cursor-pointer transition-colors"
               >
-                Huỷ
+                {pinStep === 2 ? 'Quay lại' : 'Huỷ'}
               </button>
-              {pinStep === 2 && (
+
+              {pinStep === 2 ? (
                 <button
                   type="button"
                   disabled={secondPin.length < 4}
                   onClick={handleSavePin}
-                  className="flex-1 py-2 text-xs font-semibold rounded-xl bg-primary text-white hover:opacity-90 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1"
+                  className="flex-1 py-2.5 text-xs font-semibold rounded-xl bg-primary text-white hover:opacity-90 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 transition-opacity shadow-sm"
                 >
                   <Check size={14} />
-                  <span>Hoàn tất</span>
+                  <span>Xác nhận</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={firstPin.length < 4}
+                  onClick={() => {
+                    if (firstPin.length === 4) {
+                      setPinStep(2);
+                      setPinError(null);
+                    }
+                  }}
+                  className="flex-1 py-2.5 text-xs font-semibold rounded-xl bg-primary text-white hover:opacity-90 disabled:opacity-50 cursor-pointer transition-opacity shadow-sm"
+                >
+                  Tiếp tục
                 </button>
               )}
             </div>

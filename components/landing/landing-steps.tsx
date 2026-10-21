@@ -4,7 +4,7 @@ const STEPS = [
   {
     step: 'Bước 1',
     title: 'Đăng nhập nhanh',
-    description: 'Google, Apple hoặc link qua email.',
+    description: 'Google, Apple hoặc mật khẩu email.',
   },
   {
     step: 'Bước 2',

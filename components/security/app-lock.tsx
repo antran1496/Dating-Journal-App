@@ -36,7 +36,7 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
 
   // Check initial lock state on mount
   useEffect(() => {
-    if (isCurrentlyLocked()) {
+    if (isCurrentlyLocked() || checkAutoLock()) {
       setLocked(true);
     }
 
@@ -74,12 +74,14 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
         recordHiddenAt();
         if (isMultitaskBlurEnabled()) {
           setIsBlurActive(true);
+          document.documentElement.setAttribute('data-app-blur', 'true');
         }
       } else {
         if (isMultitaskBlurEnabled()) {
           setIsBlurActive(false);
+          document.documentElement.removeAttribute('data-app-blur');
         }
-        if (checkAutoLock()) {
+        if (checkAutoLock() || isCurrentlyLocked()) {
           setLocked(true);
           setPinInput('');
           setErrorMsg(null);
@@ -90,12 +92,14 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
     const handleWindowBlur = () => {
       if (isMultitaskBlurEnabled()) {
         setIsBlurActive(true);
+        document.documentElement.setAttribute('data-app-blur', 'true');
       }
     };
 
     const handleWindowFocus = () => {
       if (isMultitaskBlurEnabled()) {
         setIsBlurActive(false);
+        document.documentElement.removeAttribute('data-app-blur');
       }
     };
 
@@ -135,25 +139,41 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
     }
   }, []);
 
-  const handleKeyPress = (num: string) => {
+  const handleKeyPress = useCallback((num: string) => {
     if (remainingCooldown) return;
-    if (pinInput.length >= 6) return;
+    if (pinInput.length >= 4) return;
 
     const next = pinInput + num;
     setPinInput(next);
     setErrorMsg(null);
 
-    // Auto submit if 4 or 6 digits
+    // Auto submit if 4 digits
     if (next.length === 4) {
       handleSubmitPin(next);
     }
-  };
+  }, [pinInput, remainingCooldown, handleSubmitPin]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (remainingCooldown) return;
     setPinInput((prev) => prev.slice(0, -1));
     setErrorMsg(null);
-  };
+  }, [remainingCooldown]);
+
+  // Support hardware/virtual keyboard typing when locked
+  useEffect(() => {
+    if (!locked) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= '0' && e.key <= '9') {
+        handleKeyPress(e.key);
+      } else if (e.key === 'Backspace') {
+        handleDelete();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [locked, handleKeyPress, handleDelete]);
 
   const handleBiometricAuth = async () => {
     try {
@@ -169,7 +189,7 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
   // Render locked screen when locked
   if (locked) {
     return (
-      <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center p-6 select-none animate-fadeIn">
+      <div className="fixed inset-0 z-[9999] bg-background flex flex-col items-center justify-center p-6 select-none animate-fadeIn">
         <div className="w-full max-w-xs flex flex-col items-center text-center space-y-6">
           <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center shadow-sm">
             <Lock size={32} />
@@ -264,9 +284,9 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
 
   return (
     <>
-      {/* Multitask Blur Overlay (T6.2) */}
+      {/* Multitask Blur Overlay */}
       {isBlurActive && (
-        <div className="fixed inset-0 z-50 bg-background/85 backdrop-blur-3xl flex flex-col items-center justify-center select-none pointer-events-none">
+        <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-3xl flex flex-col items-center justify-center select-none pointer-events-none">
           <div className="w-16 h-16 rounded-full bg-primary/20 text-primary flex items-center justify-center shadow-lg animate-pulse">
             <Heart size={36} fill="currentColor" />
           </div>

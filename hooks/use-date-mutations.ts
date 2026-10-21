@@ -45,10 +45,21 @@ export function useCreateDate(coupleId: string) {
       // Cập nhật cache ngay lập tức
       queryClient.setQueryData(
         queryKeys.dates.list(coupleId),
-        (oldData: { pages?: DateEntry[][] } | undefined) => {
+        (oldData: { pages?: (DateEntry[] | { data: DateEntry[]; total: number })[] } | undefined) => {
           if (!oldData || !oldData.pages || oldData.pages.length === 0) return oldData;
+          const firstPage = oldData.pages[0];
+          let updatedFirstPage: DateEntry[] | { data: DateEntry[]; total: number };
+          if (Array.isArray(firstPage)) {
+            updatedFirstPage = [newData, ...firstPage];
+          } else {
+            updatedFirstPage = {
+              ...firstPage,
+              data: [newData, ...(firstPage.data || [])],
+              total: (firstPage.total ?? 0) + 1,
+            };
+          }
           const newPages = [...oldData.pages];
-          newPages[0] = [newData, ...newPages[0]];
+          newPages[0] = updatedFirstPage;
           return { ...oldData, pages: newPages };
         }
       );
@@ -79,13 +90,19 @@ export function useUpdateDate(coupleId: string) {
       queryClient.setQueryData(queryKeys.dates.detail(updated.id), updated);
       queryClient.setQueryData(
         queryKeys.dates.list(coupleId),
-        (oldData: { pages?: DateEntry[][] } | undefined) => {
+        (oldData: { pages?: (DateEntry[] | { data: DateEntry[]; total: number })[] } | undefined) => {
           if (!oldData || !oldData.pages) return oldData;
           return {
             ...oldData,
-            pages: oldData.pages.map((page: DateEntry[]) =>
-              page.map((date) => (date.id === updated.id ? updated : date))
-            ),
+            pages: oldData.pages.map((page) => {
+              if (Array.isArray(page)) {
+                return page.map((date) => (date.id === updated.id ? updated : date));
+              }
+              return {
+                ...page,
+                data: page.data.map((date) => (date.id === updated.id ? updated : date)),
+              };
+            }),
           };
         }
       );
@@ -114,13 +131,20 @@ export function useDeleteDate(coupleId: string) {
       queryClient.removeQueries({ queryKey: queryKeys.dates.detail(deletedId) });
       queryClient.setQueryData(
         queryKeys.dates.list(coupleId),
-        (oldData: { pages?: DateEntry[][] } | undefined) => {
+        (oldData: { pages?: (DateEntry[] | { data: DateEntry[]; total: number })[] } | undefined) => {
           if (!oldData || !oldData.pages) return oldData;
           return {
             ...oldData,
-            pages: oldData.pages.map((page: DateEntry[]) =>
-              page.filter((date) => date.id !== deletedId)
-            ),
+            pages: oldData.pages.map((page) => {
+              if (Array.isArray(page)) {
+                return page.filter((date) => date.id !== deletedId);
+              }
+              return {
+                ...page,
+                data: page.data.filter((date) => date.id !== deletedId),
+                total: Math.max(0, (page.total ?? 1) - 1),
+              };
+            }),
           };
         }
       );

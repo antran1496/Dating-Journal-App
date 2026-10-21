@@ -84,7 +84,10 @@ export function DatesInfiniteList({ coupleId, filters }: DatesInfiniteListProps)
     return <div className="p-8 text-center text-text-muted">Đang tải kỷ niệm...</div>;
   }
 
-  const displayDates = data?.pages ? data.pages.flat() : [];
+  const displayDates = data?.pages
+    ? data.pages.flatMap((page) => (Array.isArray(page) ? page : page.data || []))
+    : [];
+  const totalCount = data?.pages?.[0]?.total ?? displayDates.length;
 
   if (displayDates.length === 0) {
     return <DatesEmptyState />;
@@ -208,7 +211,7 @@ export function DatesInfiniteList({ coupleId, filters }: DatesInfiniteListProps)
 
       {!hasNextPage && displayDates.length > 0 && (
         <div className="py-6 text-center text-xs text-text-muted opacity-70">
-          ✨ Đã hiển thị tất cả {displayDates.length} kỷ niệm
+          ✨ Đã hiển thị tất cả {totalCount} kỷ niệm
         </div>
       )}
     </div>
