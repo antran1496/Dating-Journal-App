@@ -60,7 +60,7 @@ export function LandingHero({ isAuthed = false }: LandingHeroProps) {
 
             <div className="flex items-center gap-2 text-xs sm:text-sm text-text-muted pt-2">
               <Lock className="w-4 h-4 text-primary shrink-0" />
-              <span>Ảnh chỉ hai bạn thấy. Xuất hoặc xóa dữ liệu bất cứ lúc nào.</span>
+              <span>Ảnh và kỷ niệm chỉ hai bạn nhìn thấy.</span>
             </div>
           </div>
 
@@ -83,7 +83,7 @@ export function LandingHero({ isAuthed = false }: LandingHeroProps) {
               </div>
 
               <p className="mt-6 text-sm font-medium text-text-muted text-center max-w-[240px]">
-                Nhật ký riêng tư khóa bằng mã PIN &amp; sinh trắc học
+                Nhật ký riêng tư khóa bằng mã PIN 4 số
               </p>
             </div>
           </div>

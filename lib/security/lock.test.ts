@@ -32,7 +32,7 @@ describe('lib/security/lock', () => {
       configurable: true,
     });
     Object.defineProperty(globalThis, 'window', {
-      value: { localStorage: mockStorage },
+      value: { localStorage: mockStorage, sessionStorage: mockStorage },
       writable: true,
       configurable: true,
     });

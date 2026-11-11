@@ -45,7 +45,7 @@ export const Checked: Story = {
     checked: true,
     onChange: fn(),
     label: 'Khoá ứng dụng',
-    description: 'Yêu cầu mã PIN hoặc sinh trắc học khi mở lại app',
+    description: 'Yêu cầu mã PIN khi mở lại app',
   },
   render: () => {
     const [checked, setChecked] = useState(true);
@@ -55,7 +55,7 @@ export const Checked: Story = {
           checked={checked}
           onChange={setChecked}
           label="Khoá ứng dụng"
-          description="Yêu cầu mã PIN hoặc sinh trắc học khi mở lại app"
+          description="Yêu cầu mã PIN khi mở lại app"
         />
       </div>
     );

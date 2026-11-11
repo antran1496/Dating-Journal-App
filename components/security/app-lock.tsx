@@ -5,9 +5,7 @@ import { signOut } from 'next-auth/react';
 import {
   Lock,
   Delete,
-  Fingerprint,
   AlertCircle,
-  Heart,
   ShieldAlert,
 } from 'lucide-react';
 import {
@@ -16,10 +14,6 @@ import {
   getLockedUntil,
   recordHiddenAt,
   checkAutoLock,
-  isBiometricsEnabled,
-  isPlatformAuthenticatorAvailable,
-  unlockApp,
-  isMultitaskBlurEnabled,
 } from '@/lib/security/lock';
 
 interface AppLockProviderProps {
@@ -31,18 +25,12 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
   const [pinInput, setPinInput] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [remainingCooldown, setRemainingCooldown] = useState<number | null>(null);
-  const [isBlurActive, setIsBlurActive] = useState(false);
-  const [canBiometric, setCanBiometric] = useState(false);
 
   // Check initial lock state on mount
   useEffect(() => {
     if (isCurrentlyLocked() || checkAutoLock()) {
       setLocked(true);
     }
-
-    isPlatformAuthenticatorAvailable().then((avail) => {
-      setCanBiometric(avail && isBiometricsEnabled());
-    });
   }, []);
 
   // Cooldown countdown timer
@@ -67,20 +55,12 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
     return () => clearInterval(interval);
   }, [locked]);
 
-  // Handle auto-lock and multitask blur
+  // Handle auto-lock when visibility changes
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         recordHiddenAt();
-        if (isMultitaskBlurEnabled()) {
-          setIsBlurActive(true);
-          document.documentElement.setAttribute('data-app-blur', 'true');
-        }
       } else {
-        if (isMultitaskBlurEnabled()) {
-          setIsBlurActive(false);
-          document.documentElement.removeAttribute('data-app-blur');
-        }
         if (checkAutoLock() || isCurrentlyLocked()) {
           setLocked(true);
           setPinInput('');
@@ -89,29 +69,11 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
       }
     };
 
-    const handleWindowBlur = () => {
-      if (isMultitaskBlurEnabled()) {
-        setIsBlurActive(true);
-        document.documentElement.setAttribute('data-app-blur', 'true');
-      }
-    };
-
-    const handleWindowFocus = () => {
-      if (isMultitaskBlurEnabled()) {
-        setIsBlurActive(false);
-        document.documentElement.removeAttribute('data-app-blur');
-      }
-    };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleWindowBlur);
-    window.addEventListener('focus', handleWindowFocus);
     window.addEventListener('pagehide', handleVisibilityChange);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleWindowBlur);
-      window.removeEventListener('focus', handleWindowFocus);
       window.removeEventListener('pagehide', handleVisibilityChange);
     };
   }, []);
@@ -175,17 +137,6 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [locked, handleKeyPress, handleDelete]);
 
-  const handleBiometricAuth = async () => {
-    try {
-      unlockApp();
-      setLocked(false);
-      setPinInput('');
-      setErrorMsg(null);
-    } catch (err) {
-      console.error('Biometric error:', err);
-    }
-  };
-
   // Render locked screen when locked
   if (locked) {
     return (
@@ -246,18 +197,7 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
             ))}
 
             {/* Bottom Row */}
-            <div className="flex items-center justify-center">
-              {canBiometric ? (
-                <button
-                  type="button"
-                  onClick={handleBiometricAuth}
-                  className="w-16 h-16 rounded-full text-primary hover:bg-surface-hover flex items-center justify-center transition-all cursor-pointer"
-                  aria-label="Mở khoá bằng sinh trắc"
-                >
-                  <Fingerprint size={28} />
-                </button>
-              ) : null}
-            </div>
+            <div className="flex items-center justify-center" />
 
             <button
               type="button"
@@ -282,20 +222,5 @@ export function AppLockProvider({ children }: AppLockProviderProps) {
     );
   }
 
-  return (
-    <>
-      {/* Multitask Blur Overlay */}
-      {isBlurActive && (
-        <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-3xl flex flex-col items-center justify-center select-none pointer-events-none">
-          <div className="w-16 h-16 rounded-full bg-primary/20 text-primary flex items-center justify-center shadow-lg animate-pulse">
-            <Heart size={36} fill="currentColor" />
-          </div>
-          <span className="font-heading font-bold text-text mt-3 text-sm tracking-wide">
-            Dating Journal
-          </span>
-        </div>
-      )}
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }

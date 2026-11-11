@@ -3,26 +3,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
-  Shield,
   Lock,
-  EyeOff,
-  Fingerprint,
   Check,
-  AlertTriangle,
   ArrowLeft,
-  ChevronRight,
   ShieldCheck,
-  Image as ImageIcon,
 } from 'lucide-react';
 import {
   isLockEnabled,
   setupPin,
   disableLock,
-  isBiometricsEnabled,
-  setBiometricsEnabled,
-  isPlatformAuthenticatorAvailable,
-  isMultitaskBlurEnabled,
-  setMultitaskBlurEnabled,
   lockApp,
   getLockTimeout,
   setLockTimeout,
@@ -32,9 +21,6 @@ import { useToast } from '@/components/ui/toast';
 export default function PrivacySettingsPage() {
   const { toast } = useToast();
   const [lockOn, setLockOn] = useState(false);
-  const [biometricsOn, setBiometricsOn] = useState(false);
-  const [hasBioHardware, setHasBioHardware] = useState(false);
-  const [multitaskBlurOn, setMultitaskBlurOn] = useState(false);
   const [timeoutSetting, setTimeoutSetting] = useState<'immediate' | '1m' | '5m'>('1m');
 
   // PIN Setup Modal state
@@ -47,13 +33,7 @@ export default function PrivacySettingsPage() {
 
   useEffect(() => {
     setLockOn(isLockEnabled());
-    setBiometricsOn(isBiometricsEnabled());
-    setMultitaskBlurOn(isMultitaskBlurEnabled());
     setTimeoutSetting(getLockTimeout());
-
-    isPlatformAuthenticatorAvailable().then((avail) => {
-      setHasBioHardware(avail);
-    });
   }, []);
 
   useEffect(() => {
@@ -68,7 +48,6 @@ export default function PrivacySettingsPage() {
     if (lockOn) {
       disableLock();
       setLockOn(false);
-      setBiometricsOn(false);
       toast({ type: 'success', title: 'Đã tắt khoá ứng dụng' });
     } else {
       // Open PIN modal
@@ -93,30 +72,6 @@ export default function PrivacySettingsPage() {
     setLockOn(true);
     setIsPinModalOpen(false);
     toast({ type: 'success', title: 'Đã thiết lập mã PIN thành công' });
-  };
-
-  const handleToggleBiometrics = () => {
-    const next = !biometricsOn;
-    setBiometricsEnabled(next);
-    setBiometricsOn(next);
-    toast({
-      type: 'success',
-      title: next
-        ? 'Đã bật mở khoá bằng sinh trắc học'
-        : 'Đã tắt mở khoá bằng sinh trắc học',
-    });
-  };
-
-  const handleToggleMultitaskBlur = () => {
-    const next = !multitaskBlurOn;
-    setMultitaskBlurEnabled(next);
-    setMultitaskBlurOn(next);
-    toast({
-      type: 'success',
-      title: next
-        ? 'Đã bật làm mờ app khi chuyển màn hình'
-        : 'Đã tắt làm mờ app',
-    });
   };
 
   return (
@@ -229,81 +184,11 @@ export default function PrivacySettingsPage() {
                 Thay đổi
               </button>
             </div>
-
-            {hasBioHardware && (
-              <div className="flex items-center justify-between text-xs pt-1">
-                <span className="text-text font-medium flex items-center gap-1.5">
-                  <Fingerprint size={15} className="text-primary shrink-0" />
-                  <span>Mở khoá bằng sinh trắc học</span>
-                </span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={biometricsOn}
-                  onClick={handleToggleBiometrics}
-                  className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 shrink-0 cursor-pointer flex items-center ${
-                    biometricsOn ? 'bg-primary' : 'bg-surface-hover border border-border'
-                  }`}
-                >
-                  <span
-                    className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 pointer-events-none ${
-                      biometricsOn ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
 
-      {/* 2. Multitask Blur Card */}
-      <div className="bg-surface rounded-[var(--radius-xl)] border border-border p-5 shadow-xs">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex gap-3">
-            <div className="w-9 h-9 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-              <EyeOff size={18} />
-            </div>
-            <div>
-              <h3 className="font-heading text-base font-bold text-text">Ẩn đa nhiệm</h3>
-              <p className="text-xs text-text-muted mt-0.5">
-                Làm mờ nội dung ứng dụng khi bạn chuyển qua app khác để người xung quanh không nhìn thấy.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            role="switch"
-            aria-checked={multitaskBlurOn}
-            onClick={handleToggleMultitaskBlur}
-            className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 shrink-0 cursor-pointer flex items-center ${
-              multitaskBlurOn ? 'bg-primary' : 'bg-surface-hover border border-border'
-            }`}
-          >
-            <span
-              className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 pointer-events-none ${
-                multitaskBlurOn ? 'translate-x-5' : 'translate-x-0'
-              }`}
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* 3. Media Link Expiration Notice */}
-      <div className="bg-surface rounded-[var(--radius-xl)] border border-border p-5 shadow-xs flex items-start gap-3">
-        <div className="w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-          <ImageIcon size={18} />
-        </div>
-        <div>
-          <h3 className="font-heading text-base font-bold text-text">Đường dẫn ảnh có hạn</h3>
-          <p className="text-xs text-text-muted mt-1 leading-relaxed">
-            Ảnh và video chỉ mở qua đường dẫn có thời hạn bảo mật. Người ngoài không xem được dù có liên kết, đảm bảo mọi kỷ niệm luôn hoàn toàn riêng tư.
-          </p>
-        </div>
-      </div>
-
-      {/* 4. Who Sees What Table */}
+      {/* 2. Who Sees What Table */}
       <div className="bg-surface rounded-[var(--radius-xl)] border border-border p-5 shadow-xs space-y-3">
         <h3 className="font-heading text-base font-bold text-text flex items-center gap-2">
           <ShieldCheck size={18} className="text-primary" />
@@ -340,23 +225,6 @@ export default function PrivacySettingsPage() {
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* 5. Link to Data & Account lifecycle */}
-      <div className="bg-surface rounded-[var(--radius-xl)] border border-border p-5 shadow-xs flex items-center justify-between">
-        <div>
-          <h3 className="font-heading text-sm font-bold text-text">Dữ liệu & Vòng đời tài khoản</h3>
-          <p className="text-xs text-text-muted mt-0.5">
-            Xuất dữ liệu ZIP, rời không gian chung, hoặc xoá tài khoản.
-          </p>
-        </div>
-        <Link
-          href="/settings/data"
-          className="text-xs text-primary font-semibold hover:underline flex items-center gap-1"
-        >
-          <span>Quản lý</span>
-          <ChevronRight size={14} />
-        </Link>
       </div>
 
       {/* PIN Setup Modal */}

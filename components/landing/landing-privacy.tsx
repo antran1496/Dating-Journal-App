@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lock, KeyRound, DownloadCloud, EyeOff } from 'lucide-react';
+import { Lock, KeyRound, EyeOff, ShieldCheck } from 'lucide-react';
 
 export function LandingPrivacy() {
   return (
@@ -15,8 +15,8 @@ export function LandingPrivacy() {
                 Riêng tư nhìn thấy được
               </h2>
               <p className="text-base sm:text-lg text-text-muted leading-relaxed">
-                Ảnh buổi hẹn dùng đường dẫn có hạn, người ngoài không mở được dù có link.
-                Khóa app bằng PIN hoặc sinh trắc học. Rời couple bằng hai bước xác nhận và được giữ bản sao.
+                Không gian kỷ niệm chỉ giới hạn tối đa hai thành viên.
+                Bảo vệ ứng dụng bằng mã PIN 4 số cá nhân và kiểm soát rõ ràng quyền xem dữ liệu.
               </p>
             </div>
 
@@ -28,11 +28,11 @@ export function LandingPrivacy() {
                 </span>
                 <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-900 text-sm font-semibold text-violet-700 dark:text-violet-300 shadow-sm">
                   <KeyRound className="w-4 h-4" />
-                  Khóa app
+                  Khóa app PIN
                 </span>
-                <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-sm font-semibold text-amber-700 dark:text-amber-300 shadow-sm">
-                  <DownloadCloud className="w-4 h-4" />
-                  Xuất ZIP
+                <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-sm font-semibold text-emerald-700 dark:text-emerald-300 shadow-sm">
+                  <ShieldCheck className="w-4 h-4" />
+                  An toàn &amp; bảo mật
                 </span>
               </div>
 

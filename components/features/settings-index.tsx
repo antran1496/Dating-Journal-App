@@ -7,11 +7,8 @@ import {
   Heart,
   Palette,
   Shield,
-  Bell,
-  FileArchive,
   ChevronRight,
   LogOut,
-  AlertTriangle,
   Loader2,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
@@ -77,22 +74,9 @@ export function SettingsIndex({ profile, couple }: SettingsIndexProps) {
           icon: Shield,
           color: 'text-emerald-500 bg-emerald-500/10',
           title: 'Quyền riêng tư và bảo mật',
-          desc: 'Khóa app PIN, ẩn màn hình đa nhiệm, ai xem được gì',
+          desc: 'Khóa app bằng mã PIN, ai xem được gì',
         },
-        {
-          href: '/settings/notifications',
-          icon: Bell,
-          color: 'text-blue-500 bg-blue-500/10',
-          title: 'Thông báo',
-          desc: 'Nhắc nhở cuối tuần, câu hỏi hàng ngày, giờ yên lặng',
-        },
-        {
-          href: '/settings/data',
-          icon: FileArchive,
-          color: 'text-amber-500 bg-amber-500/10',
-          title: 'Dữ liệu của bạn',
-          desc: 'Xuất file ZIP toàn bộ dữ liệu & ảnh kỷ niệm',
-        },
+        // Tạm ẩn Cài đặt thông báo (/settings/notifications)
       ],
     },
   ];
@@ -151,38 +135,6 @@ export function SettingsIndex({ profile, couple }: SettingsIndexProps) {
           </Card>
         </div>
       ))}
-
-      {/* Vùng cần cân nhắc */}
-      <div className="space-y-2 pt-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted px-1 flex items-center gap-1.5">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Vùng cần cân nhắc
-        </h2>
-        <Card className="border border-border bg-surface p-4 space-y-3 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div className="space-y-0.5">
-              <span className="text-sm font-medium text-text block">Rời couple</span>
-              <p className="text-xs text-text-muted">
-                Dữ liệu chung lưu 30 ngày rồi xóa, bạn có thể xuất trước.
-              </p>
-            </div>
-            <Link href="/settings/data" className="shrink-0 text-xs text-primary font-medium hover:underline pt-0.5">
-              Chi tiết →
-            </Link>
-          </div>
-
-          <div className="pt-2 border-t border-border flex items-start justify-between gap-3">
-            <div className="space-y-0.5">
-              <span className="text-sm font-medium text-text block">Xóa tài khoản</span>
-              <p className="text-xs text-text-muted">
-                Xóa vĩnh viễn toàn bộ dữ liệu cá nhân của bạn trên ứng dụng.
-              </p>
-            </div>
-            <Link href="/settings/data" className="shrink-0 text-xs text-red-500 font-medium hover:underline pt-0.5">
-              Xóa →
-            </Link>
-          </div>
-        </Card>
-      </div>
 
       {/* Logout Button */}
       <div className="pt-2">

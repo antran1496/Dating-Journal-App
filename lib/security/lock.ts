@@ -7,13 +7,11 @@ const STORAGE_KEYS = {
   ENABLED: 'dj_lock_enabled',
   HASH: 'dj_lock_hash',
   SALT: 'dj_lock_salt',
-  BIOMETRICS: 'dj_lock_biometrics',
   FAILED: 'dj_lock_failed_attempts',
   LOCKED_UNTIL: 'dj_lock_locked_until',
   HIDDEN_AT: 'dj_lock_hidden_at',
   STATUS: 'dj_lock_status', // 'locked' | 'unlocked'
   TIMEOUT: 'dj_lock_timeout', // 'immediate' | '1m' | '5m'
-  MULTITASK_BLUR: 'dj_privacy_blur_enabled',
 };
 
 const SESSION_UNLOCKED_KEY = 'dj_session_unlocked';
@@ -69,7 +67,6 @@ export function disableLock(): void {
   storage.removeItem(STORAGE_KEYS.ENABLED);
   storage.removeItem(STORAGE_KEYS.HASH);
   storage.removeItem(STORAGE_KEYS.SALT);
-  storage.removeItem(STORAGE_KEYS.BIOMETRICS);
   storage.removeItem(STORAGE_KEYS.STATUS);
   storage.removeItem(STORAGE_KEYS.TIMEOUT);
   getSessionStorage()?.removeItem(SESSION_UNLOCKED_KEY);
@@ -225,45 +222,4 @@ export function checkAutoLock(): boolean {
   }
 
   return false;
-}
-
-export function isBiometricsEnabled(): boolean {
-  const storage = getStorage();
-  return storage?.getItem(STORAGE_KEYS.BIOMETRICS) === 'true';
-}
-
-export function setBiometricsEnabled(enabled: boolean): void {
-  const storage = getStorage();
-  if (!storage) return;
-  if (enabled) {
-    storage.setItem(STORAGE_KEYS.BIOMETRICS, 'true');
-  } else {
-    storage.removeItem(STORAGE_KEYS.BIOMETRICS);
-  }
-}
-
-export async function isPlatformAuthenticatorAvailable(): Promise<boolean> {
-  if (typeof window === 'undefined' || !window.PublicKeyCredential) {
-    return false;
-  }
-  try {
-    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-  } catch {
-    return false;
-  }
-}
-
-export function isMultitaskBlurEnabled(): boolean {
-  const storage = getStorage();
-  return storage?.getItem(STORAGE_KEYS.MULTITASK_BLUR) === 'true';
-}
-
-export function setMultitaskBlurEnabled(enabled: boolean): void {
-  const storage = getStorage();
-  if (!storage) return;
-  if (enabled) {
-    storage.setItem(STORAGE_KEYS.MULTITASK_BLUR, 'true');
-  } else {
-    storage.removeItem(STORAGE_KEYS.MULTITASK_BLUR);
-  }
 }
