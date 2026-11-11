@@ -45,11 +45,18 @@ Tất cả màu sắc, font, spacing, radius, shadow phải được định ngh
 
 User có thể thay đổi theme runtime → tokens PHẢI hoạt động với cả light/dark mode.
 
-## 6. Git & Commit
+## 6. Git & Branching Rules
 
-- Commit messages bằng tiếng Anh, conventional commits format.
-- Không commit secrets, `.env.local`, node_modules.
-- **LUÔN LUÔN tạo feature branch từ `main`**. Không bao giờ checkout branch mới từ feature branch khác. Quy trình: merge/push feature branch hiện tại → checkout `main` → pull latest → tạo branch mới từ `main`.
+- **NGHIÊM CẤM TỰ Ý ĐẨY/MERGE VÀO NHÁNH `main`**:
+  - Tuyệt đối **KHÔNG** tự ý merge hoặc push code vào nhánh `main` cho đến khi có yêu cầu rõ ràng từ người dùng.
+  - **Mọi tính năng mới (feature), sửa lỗi (bug/fix), cải tiến UI hay refactor** đều BẮT BUỘC phải tạo và làm việc trên một nhánh riêng biệt (VD: `feat/...`, `fix/...`, `chore/...`).
+  - Sau khi hoàn thành trên nhánh riêng: chỉ commit (hoặc push nhánh đó lên remote nếu được yêu cầu), báo cáo cho user và **CHỜ LỆNH/YÊU CẦU** trước khi merge hoặc push vào `main`.
+- **Quy tắc tạo nhánh**:
+  - **LUÔN LUÔN tạo branch mới từ `main`**. Không bao giờ checkout branch mới từ feature branch khác chưa được merge. Quy trình: checkout `main` → pull latest → tạo branch mới từ `main`.
+- **Commit**:
+  - Commit messages bằng tiếng Anh, conventional commits format (`feat:`, `fix:`, `refactor:`, `chore:`, ...).
+  - Không commit secrets, `.env.local`, node_modules.
+  - Tuân thủ quy tắc trong skill `auto-commit`: không tự ý commit/push nếu người dùng chưa yêu cầu rõ ràng.
 
 ## 7. Tham khảo kế hoạch
 
